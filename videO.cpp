@@ -136,6 +136,7 @@ std::vector<std::vector<double>> target3 = {
 class Network {
 public:
     std::vector<Layer*> layers;
+    int target;
 
     Network(int n_layers, int n_neurons) {
         for (int i = 0; i < n_layers; i++) {
@@ -147,6 +148,11 @@ public:
             addLayer(layer);
         }
         connect();
+        target = 1;
+    }
+
+    void setTarget(int t) {
+        target = t;
     }
 
     void addLayer(Layer* layer) {
@@ -158,7 +164,78 @@ public:
         for (int i = 0; i < layers.size(); i++) {
             layers[i]->update();
         }
-        this->backprop();
+        this->backpropWithTarget();
+    }
+
+    void backpropWithTarget() {
+        double** targets = new double*[layers.size()];
+        for (int i = 0; i < layers.size(); i++) {
+            targets[i] = new double[layers[i]->neurons.size()];
+        }
+
+        // copy target to targets
+        if (target == 1) {
+            for (int i = 0; i < layers.size(); i++) {
+                for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                    targets[i][j] = target1[i][j];
+                }
+            }
+        }
+        else if (target == 2) {
+            for (int i = 0; i < layers.size(); i++) {
+                for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                    targets[i][j] = target2[i][j];
+                }
+            }
+        }
+        else if (target == 3) {
+            for (int i = 0; i < layers.size(); i++) {
+                for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                    targets[i][j] = target3[i][j];
+                }
+            }
+        }
+
+        double** activations = new double*[layers.size()];
+        for (int i = 0; i < layers.size(); i++) {
+            activations[i] = new double[layers[i]->neurons.size()];
+        }
+
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                activations[i][j] = layers[i]->neurons[j]->activation;
+            }
+        }
+
+        double** errors = new double*[layers.size()];
+        for (int i = 0; i < layers.size(); i++) {
+            errors[i] = new double[layers[i]->neurons.size()];
+        }
+
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                errors[i][j] = targets[i][j] - activations[i][j];
+            }
+        }
+
+        double** deltas = new double*[layers.size()];
+        for (int i = 0; i < layers.size(); i++) {
+            deltas[i] = new double[layers[i]->neurons.size()];
+        }
+
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                deltas[i][j] = errors[i][j] * sigmoidPrime(activations[i][j]);
+            }
+        }
+
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                for (int k = 0; k < layers[i]->neurons[j]->connections.size(); k++) {
+                    layers[i]->neurons[j]->connections[k]->weight += learning_rate * deltas[i][j] * layers[i]->neurons[j]->connections[k]->neuron_from->activation;
+                }
+            }
+        }
     }
 
     void backprop() {
@@ -343,6 +420,15 @@ void display(Network* network, sf::RenderWindow* window) {
                 }
                 if (event.key.code == sf::Keyboard::Enter) {
                     network->setWeights(-0.001);
+                }
+                if (event.key.code == sf::Keyboard::Num1) {
+                    network->setTarget(1);
+                }
+                if (event.key.code == sf::Keyboard::Num2) {
+                    network->setTarget(2);
+                }
+                if (event.key.code == sf::Keyboard::Num3) {
+                    network->setTarget(3);
                 }
             }
         }
