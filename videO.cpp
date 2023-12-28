@@ -133,6 +133,20 @@ std::vector<std::vector<double>> target3 = {
     {0,0,0,0,0,0,0,0,0,0}
 };
 
+std::vector<std::vector<double>> target4 = {
+    {0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5},
+    {0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0},
+    {1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5},
+    {1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0},
+    {0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5},
+    {0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0},
+    {1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5},
+    {1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0},
+    {0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5},
+    {0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0}
+
+};
+
 class Network {
 public:
     std::vector<Layer*> layers;
@@ -192,6 +206,14 @@ public:
             for (int i = 0; i < layers.size(); i++) {
                 for (int j = 0; j < layers[i]->neurons.size(); j++) {
                     targets[i][j] = target3[i][j];
+                }
+            }
+        }
+
+        else if (target == 4) {
+            for (int i = 0; i < layers.size(); i++) {
+                for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                    targets[i][j] = target4[i][j];
                 }
             }
         }
@@ -361,7 +383,7 @@ Neuron::Neuron() {
         activation = 0;
         firing = false;
         connections = std::vector<Connection*>();
-        add_to_counter = 0.02;
+        add_to_counter = 0.03;
     }
 
 void Neuron::addConnection(Connection* connection) {
@@ -372,17 +394,12 @@ double Neuron::getActivation(Neuron* neuron, double weight) {
 
         this->activation += this->add_to_counter;
         for (auto connection : connections) {
-            if (connection->neuron_from == neuron) {
-                this->activation += connection->weight * connection->neuron_to->activation;
+            if (connection->neuron_to == neuron) {
+                this->activation += connection->weight * connection->neuron_from->activation;
             }
          }
 
-        if (this->activation < 0) {
-            this->activation = 0;
-        }
-        else if (this->activation > 6) {
-            this->activation = 6;
-        }
+        this->activation = sigmoidPrime(this->activation);
 
         //this->at.push(this->activation);
         //this->at.pop();
@@ -416,10 +433,10 @@ void display(Network* network, sf::RenderWindow* window) {
             }
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Space) {
-                    network->setWeights(0.001);
+                    network->setWeights(0.6);
                 }
                 if (event.key.code == sf::Keyboard::Enter) {
-                    network->setWeights(-0.001);
+                    network->setWeights(-0.01);
                 }
                 if (event.key.code == sf::Keyboard::Num1) {
                     network->setTarget(1);
@@ -429,6 +446,9 @@ void display(Network* network, sf::RenderWindow* window) {
                 }
                 if (event.key.code == sf::Keyboard::Num3) {
                     network->setTarget(3);
+                }
+                if (event.key.code == sf::Keyboard::Num4) {
+                    network->setTarget(4);
                 }
             }
         }
@@ -441,7 +461,7 @@ void display(Network* network, sf::RenderWindow* window) {
 int main() {
     sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
     Network network(10, 10);
-    network.setWeights(-0.06);
+    network.setWeights(0.6);
 
     std::thread display_thread(display, &network, &window);
     display_thread.join();
