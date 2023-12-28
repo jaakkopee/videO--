@@ -418,7 +418,7 @@ void display(Network* network, sf::RenderWindow* window) {
         network->update();
         for (int i = 0; i < network->layers.size(); i++) {
             for (int j = 0; j < network->layers[i]->neurons.size(); j++) {
-                double radius = network->layers[i]->neurons[j]->activation * 10;
+                double radius = network->layers[i]->neurons[j]->activation * 16;
                 sf::CircleShape circle(radius);
                 circle.setPosition(100 * i+50-radius, 100 * j+50-radius);
                 circle.setFillColor(sf::Color::White);
