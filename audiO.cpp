@@ -4,11 +4,11 @@
 #include <thread>
 
 char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* freqs, int* seconds){
-    char*** array = fill3DArrayWithSoundingSines(note_matrix, MATRIX_X_SIZE, MATRIX_Y_SIZE, freqs);
+    char*** array = fill3DArrayWithSoundingSines(note_matrix, audiO::MATRIX_X_SIZE, audiO::MATRIX_Y_SIZE, freqs);
     int noteIndex = 0;
-    for (int i; i < MATRIX_Y_SIZE; i++){
-        for (int j; j < MATRIX_X_SIZE; j++){
-            for (int k; k < SIZE; k++){
+    for (int i; i < audiO::MATRIX_Y_SIZE; i++){
+        for (int j; j < audiO::MATRIX_X_SIZE; j++){
+            for (int k; k < audiO::SIZE; k++){
                 buffer[k] += array[i][j][k];
             }
         }
@@ -20,7 +20,7 @@ char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* fre
 int* generateFreqs(int size){
     int* array = (int*)calloc(size, sizeof(int));
     for (int i = 0; i < size; i++){
-        array[i] = 440*pow(2, (i - (NUM_SINES/2)) * 5.0f / 12.0f);
+        array[i] = 440*pow(2, (i - (audiO::NUM_SINES/2)) * 5.0f / 12.0f);
     }
     return array;
 }
@@ -28,7 +28,7 @@ int* generateFreqs(int size){
 int* generateSeconds(int size){
     int* array = (int*)calloc(size, sizeof(int));
     for (int i = 0; i < size; i++){
-        array[i] = NUM_SECONDS;
+        array[i] = audiO::NUM_SECONDS;
     }
     return array;
 }
@@ -53,14 +53,14 @@ char*** fill3DArrayWithSoundingSines(bool** array, int xSize, int ySize, int* fr
     for (int i = 0; i < xSize; i++){
         array2[i] = (char**)calloc(ySize, sizeof(char*));
         for (int j = 0; j < ySize; j++){
-            array2[i][j] = (char*)calloc(SIZE, sizeof(char));
+            array2[i][j] = (char*)calloc(audiO::SIZE, sizeof(char));
             if (array[i][j] == true){
-                for (int k = 0; k < SIZE; k++){
-                    array2[i][j][k] = (char) (sin((double)k/((double)SIZE/freqs[i*j])*M_PI*2.)*127+128);
+                for (int k = 0; k < audiO::SIZE; k++){
+                    array2[i][j][k] = (char) (sin((double)k/((double)audiO::SIZE/freqs[i*j])*M_PI*2.)*127+128);
                 }
             }
             else{
-                for (int k = 0; k < SIZE; k++){
+                for (int k = 0; k < audiO::SIZE; k++){
                     array2[i][j][k] = 0;
                 }
             }
@@ -83,8 +83,8 @@ void play_alsa(char* buffer, int size, snd_pcm_t *handle, int rc){
 }
 
 void play_alsa_thread(char* buffer){
-    for (int i = 0; i < PLAY_LOOPS; i++){
-        play_alsa(buffer, SIZE, audiO::handle, audiO::rc);
+    for (int i = 0; i < audiO::PLAY_LOOPS; i++){
+        play_alsa(buffer, audiO::SIZE, audiO::handle, audiO::rc);
     }
 }
 
@@ -117,14 +117,14 @@ void alsaSetup(){
     snd_pcm_hw_params_set_format(audiO::handle, params, SND_PCM_FORMAT_S16_LE);
     
     // two channels (stereo)
-    snd_pcm_hw_params_set_channels(audiO::handle, params, NUM_CHANNELS);
+    snd_pcm_hw_params_set_channels(audiO::handle, params, audiO::NUM_CHANNELS);
     
     // 44100 bits/second sampling rate (CD quality)
-    val = SAMPLE_RATE;
+    val = audiO::SAMPLE_RATE;
     snd_pcm_hw_params_set_rate_near(audiO::handle, params, &val, &dir);
     
     // set period size to 32 frames
-    frames = NUM_FRAMES;
+    frames = audiO::NUM_FRAMES;
     
     // write the parameters to the driver
     audiO::rc = snd_pcm_hw_params(audiO::handle, params);

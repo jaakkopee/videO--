@@ -6,7 +6,12 @@
 #include <SFML/Graphics.hpp>
 #include <mutex>
 #include <random>
-#include "videO.h"
+#ifndef AUDIO_H
+    #include "audiO.h"
+#endif
+#ifndef VIDEO_H
+    #include "videO.h"
+#endif
 
 //alsa and audio stuff
 int* freqs;
@@ -20,13 +25,13 @@ uint val;
 
 
 void setupArrays() {
-    int* freqs = (int*)calloc(MATRIX_ELEMENTS, sizeof(int));
-    int* seconds = (int*)calloc(MATRIX_ELEMENTS, sizeof(int));
-    char*** sineWaves = (char***)calloc(MATRIX_ELEMENTS, sizeof(char**));
-    for (int i = 0; i < MATRIX_ELEMENTS; i++) {
-        sineWaves[i] = (char**)calloc(MATRIX_ELEMENTS, sizeof(char*));
-        for (int j = 0; j < MATRIX_ELEMENTS; j++) {
-            sineWaves[i][j] = (char*)calloc(SIZE, sizeof(char));
+    int* freqs = (int*)calloc(videO::MATRIX_ELEMENTS, sizeof(int));
+    int* seconds = (int*)calloc(videO::MATRIX_ELEMENTS, sizeof(int));
+    char*** sineWaves = (char***)calloc(videO::MATRIX_ELEMENTS, sizeof(char**));
+    for (int i = 0; i < videO::MATRIX_ELEMENTS; i++) {
+        sineWaves[i] = (char**)calloc(videO::MATRIX_ELEMENTS, sizeof(char*));
+        for (int j = 0; j < videO::MATRIX_ELEMENTS; j++) {
+            sineWaves[i][j] = (char*)calloc(videO::SIZE, sizeof(char));
         }
     }
 }
@@ -383,9 +388,9 @@ double Neuron::getActivation(Neuron* neuron, double weight) {
 
 //ALSA stuff
 bool** translateFiringsToNoteMatrix(Network* network) {
-    bool** noteMatrix = (bool**)calloc(MATRIX_ELEMENTS, sizeof(bool*));
-    for (int i = 0; i < MATRIX_ELEMENTS; i++) {
-        noteMatrix[i] = (bool*)calloc(MATRIX_ELEMENTS, sizeof(bool));
+    bool** noteMatrix = (bool**)calloc(videO::MATRIX_ELEMENTS, sizeof(bool*));
+    for (int i = 0; i < videO::MATRIX_ELEMENTS; i++) {
+        noteMatrix[i] = (bool*)calloc(videO::MATRIX_ELEMENTS, sizeof(bool));
     }
     int layerIndex = 0;
     int neuronIndex = 0;
@@ -409,7 +414,7 @@ void display(Network* network, sf::RenderWindow* window) {
         mutex.lock();
         window->clear();
         network->update();
-        samplebuffer = generateSineWaves(translateFiringsToNoteMatrix(network), samplebuffer, NUM_SINES, freqs, seconds);
+        samplebuffer = generateSineWaves(translateFiringsToNoteMatrix(network), samplebuffer, videO::NUM_SINES, freqs, seconds);
         play_alsa_thread(samplebuffer);
         for (int i = 0; i < network->layers.size(); i++) {
             for (int j = 0; j < network->layers[i]->neurons.size(); j++) {
