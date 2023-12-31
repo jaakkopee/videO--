@@ -8,7 +8,7 @@
 #include <random>
 
 const double learning_rate = 0.01;
-const double globalThreshold = 1.5;
+const double globalThreshold = 0.9999;
 const int len_at = 2^10;
 
 class Connection;
@@ -16,9 +16,10 @@ class Neuron;
 class Layer;
 class Network;
 
-double sigmoidPrime(double x) {
+double sigmoid(double x) {
+    //expexts x to be between 0 and 1 and xout will be between 0 and 1 too
     double xout = 1 / (1 + exp(-x))-0.5;
-    double xoutmax = 1 / (1 + exp(-2.0))-0.5;
+    double xoutmax = 1 / (1 + exp(-1.0))-0.5;
 
     xout/=xoutmax;
     return xout;
@@ -63,7 +64,7 @@ Connection::Connection(Neuron* n1, Neuron* n2, double w): neuron_from(n1), neuro
 };
 
 void Connection::update() {
-    double act = neuron_from->getActivation(neuron_to, weight);
+    double act = neuron_to->getActivation(neuron_from, weight);
 }
 
 class Layer {
@@ -90,56 +91,57 @@ public:
     }
 };
 
+//target patterns, squares inside squares
 double target1[10][10] = {
-    {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},
-    {1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0},
-    {1.8,1.8,0.0,0.0,0.0,0.0,0.0,1.8,1.8,0.0},
-    {1.8,1.8,1.8,0.0,0.0,0.0,1.8,1.8,1.8,0.0},
-    {1.8,1.8,1.8,1.8,0.0,1.8,1.8,1.8,1.8,0.0},
-    {1.8,1.8,1.8,0.0,0.0,0.0,1.8,1.8,1.8,0.0},
-    {1.8,1.8,0.0,0.0,0.0,0.0,0.0,1.8,1.8,0.0},
-    {1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0},
-    {0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0,0.0},
-    {0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0,0.0,0.0}
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,1,1,1,1,0,0,0},
+    {0,0,0,1,0,0,1,0,0,0},
+    {0,1,0,1,0,0,1,0,1,0},
+    {0,1,0,1,1,1,1,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,0,0,0,0,0,0,0,0,0}
 };
 
 double target2[10][10] = {
-    {0.0,0.0,0.0,0.0,0.0,1.8,1.8,0.0,0.0,0.0},
-    {0.0,0.0,0.0,0.0,1.8,0.0,0.0,1.8,0.0,0.0},
-    {0.0,0.0,0.0,1.8,0.0,0.0,0.0,0.0,1.8,0.0},
-    {0.0,0.0,1.8,0.0,0.0,0.0,0.0,0.0,0.0,1.8},
-    {0.0,1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8},
-    {1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0},
-    {1.8,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0,0.0},
-    {0.0,1.8,0.0,0.0,0.0,0.0,1.8,0.0,0.0,0.0},
-    {0.0,0.0,1.8,0.0,0.0,1.8,0.0,0.0,0.0,0.0},
-    {0.0,0.0,0.0,1.8,1.8,0.0,0.0,0.0,0.0,0.0}
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,1,1,1,1,0,1,0},
+    {0,1,0,1,0,0,1,0,1,0},
+    {0,0,0,1,0,0,1,0,0,0},
+    {0,0,0,1,1,1,1,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0,0,0}
 };
 
 double target3[10][10] = {
-    {0.0,0.0,0.0,0.0,0.0,1.8,1.8,0.0,0.0,0.0},
-    {0.0,0.0,0.0,0.0,1.8,0.0,0.0,1.8,0.0,0.0},
-    {0.0,0.0,0.0,1.8,0.0,0.0,0.0,0.0,1.8,0.0},
-    {0.0,0.0,1.8,0.0,0.0,0.0,0.0,0.0,0.0,1.8},
-    {0.0,1.8,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.8},
-    {1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,0.0},
-    {1.8,0.0,0.0,0.0,0.0,0.0,0.0,1.8,0.0,0.0},
-    {0.0,1.8,0.0,0.0,0.0,0.0,1.8,0.0,0.0,0.0},
-    {0.0,0.0,1.8,0.0,0.0,1.8,0.0,0.0,0.0,0.0},
-    {0.0,0.0,0.0,1.8,1.8,0.0,0.0,0.0,0.0,0.0}
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,0,0,0,0,0,0,0,0,0}
 };
 
 double target4[10][10] = {
-    {0.0,0.0,0.0,0.0,0.0,1.8,1.8,0.0,0.0,0.0},
-    {0.0,0.0,0.0,0.0,1.8,1.8,0.0,1.8,0.0,0.0},
-    {0.0,0.0,0.0,1.8,0.0,1.8,0.0,0.0,1.8,0.0},
-    {0.0,0.0,1.8,0.0,0.0,1.8,0.0,0.0,0.0,1.8},
-    {0.0,1.8,0.0,0.0,0.0,1.8,0.0,0.0,0.0,1.8},
-    {1.8,0.0,0.0,0.0,0.0,1.8,0.0,0.0,1.8,0.0},
-    {0.0,1.8,0.0,0.0,0.0,1.8,0.0,1.8,0.0,0.0},
-    {0.0,0.0,1.8,0.0,0.0,1.8,1.8,0.0,0.0,0.0},
-    {0.0,0.0,0.0,1.8,0.0,1.8,0.0,0.0,0.0,0.0},
-    {0.0,0.0,0.0,0.0,1.8,0.0,0.0,0.0,0.0,0.0}
+    {0,0,0,0,0,0,0,0,0,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,0,1,1,1,1,0,1,0},
+    {0,1,0,1,0,0,1,0,1,0},
+    {0,1,0,1,0,0,1,0,1,0},
+    {0,1,0,1,1,1,1,0,1,0},
+    {0,1,0,0,0,0,0,0,1,0},
+    {0,1,1,1,1,1,1,1,1,0},
+    {0,0,0,0,0,0,0,0,0,0}
 };
 
 class Network {
@@ -242,7 +244,7 @@ public:
 
         for (int i = 0; i < layers.size(); i++) {
             for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                deltas[i][j] = errors[i][j] * sigmoidPrime(activations[i][j]);
+                deltas[i][j] = errors[i][j] * sigmoid(activations[i][j]);
             }
         }
 
@@ -253,67 +255,6 @@ public:
                 }
             }
         }
-    }
-
-    void backprop() {
-        double** targets = new double*[layers.size()];
-        for (int i = 0; i < layers.size(); i++) {
-            targets[i] = new double[layers[i]->neurons.size()];
-        }
-
-        //form a cross in targets
-        for (int i = 0; i < layers.size(); i++) {
-            for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                if (i == j || i == layers.size() - j - 1) {
-                    targets[i][j] = 1.8;
-                }
-                else {
-                    targets[i][j] = 0;
-                }
-            }
-        }
-
-        double** activations = new double*[layers.size()];
-        for (int i = 0; i < layers.size(); i++) {
-            activations[i] = new double[layers[i]->neurons.size()];
-        }
-
-        for (int i = 0; i < layers.size(); i++) {
-            for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                activations[i][j] = layers[i]->neurons[j]->activation;
-            }
-        }
-
-        double** errors = new double*[layers.size()];
-        for (int i = 0; i < layers.size(); i++) {
-            errors[i] = new double[layers[i]->neurons.size()];
-        }
-
-        for (int i = 0; i < layers.size(); i++) {
-            for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                errors[i][j] = targets[i][j] - activations[i][j];
-            }
-        }
-
-        double** deltas = new double*[layers.size()];
-        for (int i = 0; i < layers.size(); i++) {
-            deltas[i] = new double[layers[i]->neurons.size()];
-        }
-
-        for (int i = 0; i < layers.size(); i++) {
-            for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                deltas[i][j] = errors[i][j] * sigmoidPrime(activations[i][j]);
-            }
-        }
-
-        for (int i = 0; i < layers.size(); i++) {
-            for (int j = 0; j < layers[i]->neurons.size(); j++) {
-                for (int k = 0; k < layers[i]->neurons[j]->connections.size(); k++) {
-                    layers[i]->neurons[j]->connections[k]->weight += learning_rate * deltas[i][j] * layers[i]->neurons[j]->connections[k]->neuron_from->activation;
-                }
-            }
-        }
-            
     }
 
     
@@ -389,12 +330,20 @@ double Neuron::getActivation(Neuron* neuron, double weight) {
 
         this->activation += this->add_to_counter;
         for (auto connection : connections) {
-            if (connection->neuron_to == neuron) {
+            if (connection->neuron_to == this) {
                 this->activation += connection->weight * connection->neuron_from->activation;
             }
-         }
+        }
 
-        this->activation = sigmoidPrime(this->activation);
+        if (this->activation < 0) {
+            this->activation = 0;
+        }
+        if (this->activation > 1) {
+            this->activation = 1;
+        }
+
+        this->activation = sigmoid(this->activation);
+
 
         if (this->activation > globalThreshold) {
             this->activation = 0;
@@ -418,7 +367,7 @@ void display(Network* network, sf::RenderWindow* window) {
         network->update();
         for (int i = 0; i < network->layers.size(); i++) {
             for (int j = 0; j < network->layers[i]->neurons.size(); j++) {
-                double radius = network->layers[i]->neurons[j]->activation * 16;
+                double radius = network->layers[i]->neurons[j]->activation * 32;
                 sf::CircleShape circle(radius);
                 circle.setPosition(100 * i+50-radius, 100 * j+50-radius);
                 if (network->layers[i]->neurons[j]->firing) {
@@ -427,7 +376,7 @@ void display(Network* network, sf::RenderWindow* window) {
                 }
                 else {
                     circle.setFillColor(sf::Color::White);
-                    
+                    network->layers[i]->neurons[j]->firing = false;
                 }
                 window->draw(circle);
             }
