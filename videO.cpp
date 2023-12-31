@@ -6,6 +6,30 @@
 #include <SFML/Graphics.hpp>
 #include <mutex>
 #include <random>
+#include "videO.h"
+
+//alsa and audio stuff
+int* freqs;
+int* seconds;
+char*** sineWaves;
+char* samplebuffer;
+snd_pcm_uframes_t frames;
+snd_pcm_hw_params_t *params;
+int size2;
+uint val;
+
+
+void setupArrays() {
+    int* freqs = (int*)calloc(MATRIX_ELEMENTS, sizeof(int));
+    int* seconds = (int*)calloc(MATRIX_ELEMENTS, sizeof(int));
+    char*** sineWaves = (char***)calloc(MATRIX_ELEMENTS, sizeof(char**));
+    for (int i = 0; i < MATRIX_ELEMENTS; i++) {
+        sineWaves[i] = (char**)calloc(MATRIX_ELEMENTS, sizeof(char*));
+        for (int j = 0; j < MATRIX_ELEMENTS; j++) {
+            sineWaves[i][j] = (char*)calloc(SIZE, sizeof(char));
+        }
+    }
+}
 
 const double learning_rate = 0.01;
 const double globalThreshold = 0.9999;
@@ -357,6 +381,26 @@ double Neuron::getActivation(Neuron* neuron, double weight) {
     
     }
 
+//ALSA stuff
+bool** translateFiringsToNoteMatrix(Network* network) {
+    bool** noteMatrix = (bool**)calloc(MATRIX_ELEMENTS, sizeof(bool*));
+    for (int i = 0; i < MATRIX_ELEMENTS; i++) {
+        noteMatrix[i] = (bool*)calloc(MATRIX_ELEMENTS, sizeof(bool));
+    }
+    int layerIndex = 0;
+    int neuronIndex = 0;
+    for (auto layer : network->layers) {
+        layerIndex++;
+        for (auto neuron : layer->neurons) {
+            neuronIndex++;
+            if (neuron->firing) {
+                noteMatrix[layerIndex][neuronIndex] = true;
+            }
+        }
+    }
+    return noteMatrix;
+}
+
 //SMFL threaded display
 std::mutex mutex;
 
@@ -365,6 +409,8 @@ void display(Network* network, sf::RenderWindow* window) {
         mutex.lock();
         window->clear();
         network->update();
+        samplebuffer = generateSineWaves(translateFiringsToNoteMatrix(network), samplebuffer, NUM_SINES, freqs, seconds);
+        play_alsa_thread(samplebuffer);
         for (int i = 0; i < network->layers.size(); i++) {
             for (int j = 0; j < network->layers[i]->neurons.size(); j++) {
                 double radius = network->layers[i]->neurons[j]->activation * 32;
@@ -415,9 +461,12 @@ void display(Network* network, sf::RenderWindow* window) {
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
     Network network(10, 10);
     network.setWeights(0.6);
+    setupArrays();
+    alsaSetup();
+    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
+
 
     std::thread display_thread(display, &network, &window);
     display_thread.join();
