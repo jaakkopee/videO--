@@ -6,12 +6,7 @@
 #include <SFML/Graphics.hpp>
 #include <mutex>
 #include <random>
-#ifndef AUDIO_H
-    #include "audiO.h"
-#endif
-#ifndef VIDEO_H
-    #include "videO.h"
-#endif
+#include "videO.h"
 
 //alsa and audio stuff
 int* freqs;
@@ -23,17 +18,17 @@ snd_pcm_hw_params_t *params;
 int size2;
 uint val;
 
-
 void setupArrays() {
-    int* freqs = (int*)calloc(videO::MATRIX_ELEMENTS, sizeof(int));
-    int* seconds = (int*)calloc(videO::MATRIX_ELEMENTS, sizeof(int));
-    char*** sineWaves = (char***)calloc(videO::MATRIX_ELEMENTS, sizeof(char**));
-    for (int i = 0; i < videO::MATRIX_ELEMENTS; i++) {
-        sineWaves[i] = (char**)calloc(videO::MATRIX_ELEMENTS, sizeof(char*));
-        for (int j = 0; j < videO::MATRIX_ELEMENTS; j++) {
-            sineWaves[i][j] = (char*)calloc(videO::SIZE, sizeof(char));
+    int* freqs = (int*)calloc(audiO::MATRIX_ELEMENTS, sizeof(int));
+    int* seconds = (int*)calloc(audiO::MATRIX_ELEMENTS, sizeof(int));
+    char*** sineWaves = (char***)calloc(audiO::MATRIX_ELEMENTS, sizeof(char**));
+    for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
+        sineWaves[i] = (char**)calloc(audiO::MATRIX_ELEMENTS, sizeof(char*));
+        for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++) {
+            sineWaves[i][j] = (char*)calloc(audiO::SIZE, sizeof(char));
         }
     }
+    char* samplebuffer = (char*)calloc(audiO::SIZE, sizeof(char));
 }
 
 const double learning_rate = 0.01;
@@ -44,6 +39,7 @@ class Connection;
 class Neuron;
 class Layer;
 class Network;
+
 
 double sigmoid(double x) {
     //expexts x to be between 0 and 1 and xout will be between 0 and 1 too
@@ -388,9 +384,9 @@ double Neuron::getActivation(Neuron* neuron, double weight) {
 
 //ALSA stuff
 bool** translateFiringsToNoteMatrix(Network* network) {
-    bool** noteMatrix = (bool**)calloc(videO::MATRIX_ELEMENTS, sizeof(bool*));
-    for (int i = 0; i < videO::MATRIX_ELEMENTS; i++) {
-        noteMatrix[i] = (bool*)calloc(videO::MATRIX_ELEMENTS, sizeof(bool));
+    bool** noteMatrix = (bool**)calloc(audiO::MATRIX_ELEMENTS, sizeof(bool*));
+    for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
+        noteMatrix[i] = (bool*)calloc(audiO::MATRIX_ELEMENTS, sizeof(bool));
     }
     int layerIndex = 0;
     int neuronIndex = 0;
@@ -414,8 +410,7 @@ void display(Network* network, sf::RenderWindow* window) {
         mutex.lock();
         window->clear();
         network->update();
-        samplebuffer = generateSineWaves(translateFiringsToNoteMatrix(network), samplebuffer, videO::NUM_SINES, freqs, seconds);
-        play_alsa_thread(samplebuffer);
+        audiO::alsabuffer = audiO::generateSineWaves(translateFiringsToNoteMatrix(network), freqs, seconds);            
         for (int i = 0; i < network->layers.size(); i++) {
             for (int j = 0; j < network->layers[i]->neurons.size(); j++) {
                 double radius = network->layers[i]->neurons[j]->activation * 32;
@@ -461,7 +456,7 @@ void display(Network* network, sf::RenderWindow* window) {
         }
 
         window->display();
-        mutex.unlock();
+        //mutex.unlock();
     }
 }
 
@@ -469,12 +464,12 @@ int main() {
     Network network(10, 10);
     network.setWeights(0.6);
     setupArrays();
-    alsaSetup();
+    audiO::alsaSetup();
+    audiO::start_audio();
     sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
-
-
     std::thread display_thread(display, &network, &window);
     display_thread.join();
+    audiO::stop_audio();
     return 0;
 }
 

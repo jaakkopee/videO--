@@ -2,7 +2,9 @@
 #define VIDEO_H
 
 #include <alsa/asoundlib.h>
-namespace videO{
+#include <cmath>
+
+namespace audiO{
     const int MATRIX_X_SIZE = 10;
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
@@ -13,6 +15,33 @@ namespace videO{
     const int NUM_FRAMES = 32;
     const int SIZE = NUM_FRAMES * NUM_CHANNELS * 2;
     const int PLAY_LOOPS = 100;
+    snd_pcm_t *handle_alsa;
+    int rc_alsa;
+    char* alsabuffer = (char*)calloc(SIZE, sizeof(char));
+    bool running = false;
+
+    bool** generateNoteMatrix(int xSize, int ySize);
+
+    char*** fill3DArrayWithSoundingSines(bool** array, int xSize, int ySize, int* freqs);
+
+    //char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* freqs, int* seconds);
+
+    char* generateSineWaves(bool** note_matrix, int* freqs, int* seconds);
+
+    void play_alsa(char* buffer, int size, snd_pcm_t *handle, int rc);
+
+    void play_alsa_thread(char* buffer);
+
+    int* generateFreqs(int size);
+
+    int* generateSeconds(int size);
+
+    void alsaSetup();
+
+    void start_audio();
+
+    void stop_audio();
+
 }
 
 
