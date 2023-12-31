@@ -116,7 +116,8 @@ void Player :: messageHandler( void *outputBuffer, void *inputBuffer, unsigned i
   }
 }
 
-TickData *globalTickData_ = new TickData;
+TickData *globalTickData_ = new TickData();
+
 Player *globalPlayer = new Player( globalTickData_ );
 int player_tick( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
                     double streamTime, RtAudioStreamStatus status, void *dataPointer ){
