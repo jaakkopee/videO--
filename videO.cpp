@@ -21,9 +21,9 @@ uint val;
 char* audiO::generateSineWaves(bool** note_matrix, int* freqs, int* seconds){ 
     char*** array = audiO::fill3DArrayWithSoundingSines(note_matrix, audiO::MATRIX_X_SIZE, audiO::MATRIX_Y_SIZE, freqs);
     int noteIndex = 0;
-    for (int i; i < audiO::MATRIX_Y_SIZE; i++){
-        for (int j; j < audiO::MATRIX_X_SIZE; j++){
-            for (int k; k < audiO::SIZE; k++){
+    for (int i=0; i < audiO::MATRIX_Y_SIZE; i++){
+        for (int j=0; j < audiO::MATRIX_X_SIZE; j++){
+            for (int k=0; k < audiO::SIZE; k++){
                 audiO::alsabuffer[k] += array[i][j][k];
             }
         }
@@ -610,11 +610,11 @@ void display(Network* network, sf::RenderWindow* window) {
 int main() {
     Network network(10, 10);
     network.setWeights(0.6);
+    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
+    std::thread display_thread(display, &network, &window);
     setupArrays();
     audiO::alsaSetup();
     audiO::start_audio();
-    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
-    std::thread display_thread(display, &network, &window);
     display_thread.join();
     audiO::stop_audio();
     return 0;
