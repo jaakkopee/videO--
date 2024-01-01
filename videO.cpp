@@ -17,7 +17,7 @@ char* audiO::generateSineWaves(){
     audiO::fill3DArrayWithSoundingSines();
     for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j=0; j < audiO::MATRIX_Y_SIZE; j++){
-            for (int k=0; k < audiO::SIZE; k++){
+            for (int k=0; k < audiO::NUM_FRAMES; k++){
                 audiO::alsabuffer[k] += audiO::sinewaves[i][j][k];
             }
         }
@@ -25,7 +25,7 @@ char* audiO::generateSineWaves(){
     return audiO::alsabuffer;
 }
 
-int* audiO::generateFreqs(){
+double* audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
         audiO::freqs[i] = 10 + i * 10;
     }
@@ -73,12 +73,12 @@ char*** audiO::fill3DArrayWithSoundingSines(){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             note_index++;
             if (audiO::note_matrix[i][j] == true){
-                for (int k = 0; k < audiO::SIZE; k++){
-                    audiO::sinewaves[i][j][k] = (char)(sin(2 * M_PI * audiO::freqs[note_index] * k / audiO::SAMPLE_RATE) * 127);
+                for (int k = 0; k < audiO::NUM_FRAMES; k++){
+                    audiO::sinewaves[i][j][k] = (char)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * 127);
                 }
             }
             else{
-                for (int k = 0; k < audiO::SIZE; k++){
+                for (int k = 0; k < audiO::NUM_FRAMES; k++){
                     audiO::sinewaves[i][j][k] = 0;
                 }
             }
@@ -122,7 +122,6 @@ void audiO::alsaSetup(){
     dir = 0;
     snd_pcm_hw_params_set_rate_near(audiO::handle_alsa, params, &val, &dir);
     
-    // set period size to 32 frames
     frames = audiO::NUM_FRAMES;
     snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &frames, &dir);
     
@@ -167,7 +166,7 @@ void audiO::stop_audio(){
 }
 
 void audiO::setupArrays() {
-    audiO::freqs = (int*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
+    audiO::freqs = (double*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
     audiO::seconds = (int*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
     audiO::sinewaves = (char***)malloc(audiO::MATRIX_ELEMENTS * sizeof(char**));
     audiO::note_matrix = (bool**)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool*));
@@ -175,10 +174,10 @@ void audiO::setupArrays() {
         audiO::sinewaves[i] = (char**)malloc(audiO::MATRIX_ELEMENTS * sizeof(char*));
         audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool));
         for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++) {
-            audiO::sinewaves[i][j] = (char*)malloc(audiO::SIZE * sizeof(char));
+            audiO::sinewaves[i][j] = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
         }
     }
-    audiO::alsabuffer = (char*)malloc(audiO::SIZE * sizeof(char));
+    audiO::alsabuffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
 }
 
 void audiO::freeArrays() {
@@ -563,6 +562,7 @@ int main() {
     audiO::setupArrays();
     audiO::generateFreqs();
     audiO::generateSeconds();
+    audiO::generateNoteMatrix();
     audiO::alsaSetup();
     audiO::start_audio();
     display_thread.join();

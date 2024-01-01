@@ -103,10 +103,10 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const int NUM_SECONDS = 5;
+    const double NUM_SECONDS = 0.3;
     const int SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 2;
-    const int NUM_FRAMES = 32;
+    const int NUM_FRAMES = (int)(((double)(SAMPLE_RATE) * NUM_SECONDS));
     const int SIZE = NUM_FRAMES * NUM_CHANNELS * 2;
     const int PLAY_LOOPS = 100;
 
@@ -116,7 +116,7 @@ namespace audiO{
     char* alsabuffer;
     bool running = false;
     char*** sinewaves;
-    int* freqs;
+    double* freqs;
     int* seconds;
     bool** note_matrix;
 
@@ -140,7 +140,7 @@ namespace audiO{
 
     void freeArrays();
 
-    int* generateFreqs();
+    double* generateFreqs();
 
     int* generateSeconds();
 
