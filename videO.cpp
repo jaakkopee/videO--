@@ -48,36 +48,11 @@ float* audiO::generateSineWaves(){
     }
     //2. divide all by max
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::alsabuffer[i] = audiO::alsabuffer[i] / max * audiO::SAMPLE_MAX;
+        audiO::alsabuffer[i] = (audiO::alsabuffer[i] / max) * audiO::SAMPLE_MAX;
     }
 
     return audiO::alsabuffer;
 }
-/*
-char* audiO::generateSineWaves(){ 
-    audiO::fill3DArrayWithSoundingSines();
-    for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j=0; j < audiO::MATRIX_Y_SIZE; j++){
-            for (int k=0; k < audiO::NUM_FRAMES; k++){
-                audiO::alsabuffer[k] += audiO::sinewaves[i][j][k];
-            }
-        }
-    }
-    //normalize signal
-    //1. find max
-    char max = 0;
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        if (audiO::alsabuffer[i] > max){
-            max = audiO::alsabuffer[i];
-        }
-    }
-    //2. divide all by max
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::alsabuffer[i] = (char)((double)audiO::alsabuffer[i] / (double)max);
-    }
-
-    return audiO::alsabuffer;
-}*/
 
 float* audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
@@ -86,7 +61,7 @@ float* audiO::generateFreqs(){
     return audiO::freqs;
 }
 
-int* audiO::generateSeconds(){
+float* audiO::generateSeconds(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
         audiO::seconds[i] = audiO::NUM_SECONDS;
     }
@@ -126,29 +101,6 @@ bool** audiO::fireToBool(){
     }
     return audiO::note_matrix;
 }
-
-//the synth
-/*
-float*** audiO::fill3DArrayWithSoundingSines(){
-    int note_index = 0;
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
-            note_index++;
-            if (audiO::note_matrix[i][j] == true){
-                for (int k = 0; k < audiO::NUM_FRAMES; k++){
-                    audiO::sinewaves[i][j][k] = (float)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * (audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation));
-                }
-            }
-            else{
-                for (int k = 0; k < audiO::NUM_FRAMES; k++){
-                    audiO::sinewaves[i][j][k] = 0;
-                }
-            }
-        }
-    }
-    return audiO::sinewaves;
-}
-*/
 
 void audiO::alsaSetup(){
     snd_pcm_hw_params_t *params;
@@ -229,10 +181,6 @@ void audiO::audio_thread(){
         for (int i = 0; i < audiO::NUM_FRAMES; i++){
             buffer[i] = (char)(audiO::alsabuffer[i]);
         }
-        //test buffer
-        //for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        //    audiO::alsabuffer[i] = (char)(sin(2 * M_PI * 440 / audiO::SAMPLE_RATE) * (audiO::SAMPLE_MAX));
-        //}
 
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, buffer, audiO::frames);
         if (audiO::rc_alsa == -EPIPE) {
@@ -246,7 +194,7 @@ void audiO::audio_thread(){
         }
         free(buffer);
         mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds((int)(audiO::SAMPLE_RATE / audiO::NUM_FRAMES)));
+        //std::this_thread::sleep_for(std::chrono::milliseconds((int)(audiO::SAMPLE_RATE / audiO::NUM_FRAMES)));
 
     }
 }
@@ -262,9 +210,9 @@ void audiO::stop_audio(){
 }
 
 void audiO::setupArrays() {
-    audiO::generateNoteMap();
+
     audiO::freqs = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
-    audiO::seconds = (int*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
+    audiO::seconds = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
     audiO::sinewaves = (float***)malloc(audiO::MATRIX_ELEMENTS * sizeof(float**));
     audiO::note_matrix = (bool**)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool*));
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
@@ -670,6 +618,8 @@ int main() {
     //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
     //If true, the note will be played, if false, it will not.
     //alsabuffer is a buffer of chars that will be used to store the sound data.
+    audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
+
     audiO::alsaSetup();
     audiO::start_audio();
     display_thread.join();

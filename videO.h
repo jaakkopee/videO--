@@ -106,7 +106,7 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const float NUM_SECONDS = 0.05;
+    const float NUM_SECONDS = 0.01;
     const float SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 2;
     const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
@@ -123,7 +123,7 @@ namespace audiO{
     bool running = false;
     float*** sinewaves;
     float* freqs;
-    int* seconds;
+    float* seconds;
     bool** note_matrix;
     std::unordered_map<int, float> note_map; // maps note_matrix index to frequency
 
@@ -133,11 +133,9 @@ namespace audiO{
 
     bool** fireToBool();
 
-    float*** fill3DArrayWithSoundingSines();
-
     //char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* freqs, int* seconds);
 
-    float* generateSineWaves();
+    float* generateSineWaves(); // sound synthesis
 
     void play_alsa();
 
@@ -151,7 +149,7 @@ namespace audiO{
 
     float* generateFreqs();
 
-    int* generateSeconds();
+    float* generateSeconds();
 
     void alsaSetup();
 
