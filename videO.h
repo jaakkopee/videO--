@@ -114,7 +114,7 @@ namespace audiO{
     const int PLAY_LOOPS = 100;
     const int SAMPLE_MAX = 32767;
     const int SAMPLE_MIN = -32768;
-    const float AMPLITUDE_NEURON = 2000*((float)SAMPLE_MAX / (float)MATRIX_ELEMENTS);
+    const float AMPLITUDE_NEURON = ((float)SAMPLE_MAX / (float)MATRIX_ELEMENTS);
 
     snd_pcm_t *handle_alsa;
     int rc_alsa;
