@@ -26,15 +26,16 @@ float* audiO::generateSineWaves(){
             }
         }
     }
-    //fill alsabuffer with 1's
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::alsabuffer[i] = 1;
-    }
 
     for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j=0; j < audiO::MATRIX_Y_SIZE; j++){
             for (int k=0; k < audiO::NUM_FRAMES; k++){
-                audiO::alsabuffer[k] *= audiO::sinewaves[i][j][k];
+                if (i == 0 && j == 0){
+                    audiO::alsabuffer[k] = audiO::sinewaves[i][j][k];
+                }
+                else{
+                    audiO::alsabuffer[k] += audiO::sinewaves[i][j][k];
+                }
             }
         }
     }
