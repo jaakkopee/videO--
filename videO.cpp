@@ -13,6 +13,51 @@ snd_pcm_hw_params_t *params;
 int size2;
 uint val;
 
+float* audiO::generateSineWaves(){ 
+    int note_index = 0;
+    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
+        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
+            note_index++;
+            if (audiO::note_matrix[i][j] == true){
+                for (int k = 0; k < audiO::NUM_FRAMES; k++){
+                    audiO::sinewaves[i][j][k] = (float)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * (audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation));
+                }
+            }
+            else{
+                for (int k = 0; k < audiO::NUM_FRAMES; k++){
+                    audiO::sinewaves[i][j][k] = 0;
+                }
+            }
+        }
+    }
+    //fill alsabuffer with 1's
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        audiO::alsabuffer[i] = 1;
+    }
+
+    for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
+        for (int j=0; j < audiO::MATRIX_Y_SIZE; j++){
+            for (int k=0; k < audiO::NUM_FRAMES; k++){
+                audiO::alsabuffer[k] *= audiO::sinewaves[i][j][k];
+            }
+        }
+    }
+    //normalize signal
+    //1. find max
+    float max = 0;
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        if (audiO::alsabuffer[i] > max){
+            max = audiO::alsabuffer[i];
+        }
+    }
+    //2. divide all by max
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        audiO::alsabuffer[i] = audiO::alsabuffer[i] / max * audiO::SAMPLE_MAX;
+    }
+
+    return audiO::alsabuffer;
+}
+/*
 char* audiO::generateSineWaves(){ 
     audiO::fill3DArrayWithSoundingSines();
     for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
@@ -22,12 +67,25 @@ char* audiO::generateSineWaves(){
             }
         }
     }
-    return audiO::alsabuffer;
-}
+    //normalize signal
+    //1. find max
+    char max = 0;
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        if (audiO::alsabuffer[i] > max){
+            max = audiO::alsabuffer[i];
+        }
+    }
+    //2. divide all by max
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        audiO::alsabuffer[i] = (char)((double)audiO::alsabuffer[i] / (double)max);
+    }
 
-double* audiO::generateFreqs(){
+    return audiO::alsabuffer;
+}*/
+
+float* audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
-        audiO::freqs[i] = 10 + i * 10;
+        audiO::freqs[i] = audiO::note_map[i];
     }
     return audiO::freqs;
 }
@@ -39,6 +97,12 @@ int* audiO::generateSeconds(){
     return audiO::seconds;
 }
 
+void audiO::generateNoteMap(){
+    for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
+        audiO::note_map[i] = 220 * pow(2, (double)i / 12); //equal temperament A4 = 440Hz
+    }
+}
+
 
 bool** audiO::generateNoteMatrix(){
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
@@ -48,7 +112,7 @@ bool** audiO::generateNoteMatrix(){
     }
     return audiO::note_matrix;
 }
-
+//converts the firing neurons to a matrix of booleans
 bool** audiO::fireToBool(){
     int layerIndex = 0;
     int neuronIndex = 0;
@@ -67,14 +131,16 @@ bool** audiO::fireToBool(){
     return audiO::note_matrix;
 }
 
-char*** audiO::fill3DArrayWithSoundingSines(){
+//the synth
+/*
+float*** audiO::fill3DArrayWithSoundingSines(){
     int note_index = 0;
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             note_index++;
             if (audiO::note_matrix[i][j] == true){
                 for (int k = 0; k < audiO::NUM_FRAMES; k++){
-                    audiO::sinewaves[i][j][k] = (char)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * 127);
+                    audiO::sinewaves[i][j][k] = (float)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * (audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation));
                 }
             }
             else{
@@ -86,7 +152,7 @@ char*** audiO::fill3DArrayWithSoundingSines(){
     }
     return audiO::sinewaves;
 }
-
+*/
 
 void audiO::alsaSetup(){
     snd_pcm_hw_params_t *params;
@@ -105,25 +171,49 @@ void audiO::alsaSetup(){
     snd_pcm_hw_params_alloca(&params);
     
     // fill it in with default values
-    snd_pcm_hw_params_any(audiO::handle_alsa, params);
+    err = snd_pcm_hw_params_any(audiO::handle_alsa, params);
+    if (err < 0) {
+        fprintf(stderr, "Can not configure this PCM device: %s\n", snd_strerror(err));
+        exit(1);
+    }
     
     // set the desired hardware parameters
     // INTERLEAVED is the default
-    snd_pcm_hw_params_set_access(audiO::handle_alsa, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    err = snd_pcm_hw_params_set_access(audiO::handle_alsa, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    if (err < 0) {
+        fprintf(stderr, "Error setting interleaved mode: %s\n", snd_strerror(err));
+        exit(1);
+    }
     
     // signed 16 bit little endian format
-    snd_pcm_hw_params_set_format(audiO::handle_alsa, params, SND_PCM_FORMAT_S16_LE);
+    err = snd_pcm_hw_params_set_format(audiO::handle_alsa, params, SND_PCM_FORMAT_S16_LE);
+    if (err < 0) {
+        fprintf(stderr, "Error setting format: %s\n", snd_strerror(err));
+        exit(1);
+    }
     
     // two channels (stereo)
-    snd_pcm_hw_params_set_channels(audiO::handle_alsa, params, audiO::NUM_CHANNELS);
+    err = snd_pcm_hw_params_set_channels(audiO::handle_alsa, params, audiO::NUM_CHANNELS);
+    if (err < 0) {
+        fprintf(stderr, "Error setting channels: %s\n", snd_strerror(err));
+        exit(1);
+    }
     
     // 44100 bits/second sampling rate (CD quality)
     val = audiO::SAMPLE_RATE;
     dir = 0;
-    snd_pcm_hw_params_set_rate_near(audiO::handle_alsa, params, &val, &dir);
+    err = snd_pcm_hw_params_set_rate_near(audiO::handle_alsa, params, &val, &dir);
+    if (err < 0) {
+        fprintf(stderr, "Error setting sampling rate (%d): %s\n", val, snd_strerror(err));
+        exit(1);
+    }
     
     frames = audiO::NUM_FRAMES;
-    snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &frames, &dir);
+    err = snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &frames, &dir);
+    if (err < 0) {
+        fprintf(stderr, "Error setting period size (%d): %s\n", frames, snd_strerror(err));
+        exit(1);
+    }
     
     // write the parameters to the driver
     audiO::rc_alsa = snd_pcm_hw_params(audiO::handle_alsa, params);
@@ -137,20 +227,30 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
-        audiO::fireToBool();
-        audiO::generateSineWaves();
-        audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::alsabuffer, audiO::frames);
-        if (rc_alsa == -EPIPE) {
+        audiO::note_matrix = audiO::fireToBool();
+        audiO::alsabuffer = audiO::generateSineWaves();
+        char* buffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
+        for (int i = 0; i < audiO::NUM_FRAMES; i++){
+            buffer[i] = (char)(audiO::alsabuffer[i]);
+        }
+        //test buffer
+        //for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        //    audiO::alsabuffer[i] = (char)(sin(2 * M_PI * 440 / audiO::SAMPLE_RATE) * (audiO::SAMPLE_MAX));
+        //}
+
+        audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, buffer, audiO::frames);
+        if (audiO::rc_alsa == -EPIPE) {
             // EPIPE means underrun
             fprintf(stderr, "underrun occurred\n");
-            snd_pcm_prepare(handle_alsa);
-        } else if (rc_alsa < 0) {
-            fprintf(stderr, "error from writei: %s\n", snd_strerror(rc_alsa));
+            snd_pcm_prepare(audiO::handle_alsa);
+        } else if (audiO::rc_alsa < 0) {
+            fprintf(stderr, "error from writei: %s\n", snd_strerror(audiO::rc_alsa));
         } else if (rc_alsa != (int)audiO::frames) {
-            fprintf(stderr, "short write, write %d frames\n", rc_alsa);
+            fprintf(stderr, "short write, write %d frames\n", audiO::rc_alsa);
         }
+        free(buffer);
         mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(audiO::SAMPLE_RATE / audiO::NUM_FRAMES));
+        std::this_thread::sleep_for(std::chrono::milliseconds((int)(audiO::SAMPLE_RATE / audiO::NUM_FRAMES)));
 
     }
 }
@@ -166,18 +266,19 @@ void audiO::stop_audio(){
 }
 
 void audiO::setupArrays() {
-    audiO::freqs = (double*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
+    audiO::generateNoteMap();
+    audiO::freqs = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
     audiO::seconds = (int*)malloc(audiO::MATRIX_ELEMENTS * sizeof(int));
-    audiO::sinewaves = (char***)malloc(audiO::MATRIX_ELEMENTS * sizeof(char**));
+    audiO::sinewaves = (float***)malloc(audiO::MATRIX_ELEMENTS * sizeof(float**));
     audiO::note_matrix = (bool**)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool*));
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
-        audiO::sinewaves[i] = (char**)malloc(audiO::MATRIX_ELEMENTS * sizeof(char*));
+        audiO::sinewaves[i] = (float**)malloc(audiO::MATRIX_ELEMENTS * sizeof(float*));
         audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool));
         for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++) {
-            audiO::sinewaves[i][j] = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
+            audiO::sinewaves[i][j] = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
         }
     }
-    audiO::alsabuffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
+    audiO::alsabuffer = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
 }
 
 void audiO::freeArrays() {
@@ -192,10 +293,15 @@ void audiO::freeArrays() {
     }
     free(audiO::sinewaves);
     free(audiO::alsabuffer);
+    snd_pcm_drain(audiO::handle_alsa);
+    snd_pcm_close(audiO::handle_alsa);
 }
 
-//neural network stuff
+//neural network and video stuff
 
+videO::Network* videO::Network::getNetwork() {
+    return videO::globalNetwork;
+}
 
 double videO::sigmoid(double x) {
     //expexts x to be between 0 and 1 and xout will be between 0 and 1 too
@@ -559,10 +665,15 @@ int main() {
     videO::globalNetwork->setWeights(0.6);
     sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
     std::thread display_thread(videO::display, &window);
-    audiO::setupArrays();
-    audiO::generateFreqs();
-    audiO::generateSeconds();
-    audiO::generateNoteMatrix();
+    audiO::setupArrays(); // allocate memory for arrays used by the sound synthesis
+    //the arrays are; freqs, seconds, sinewaves, note_matrix, alsabuffer
+    //freqs is an array of doubles that will be used to determine the frequency of each note. It is a 100 element array, one for each neuron.
+    audiO::generateFreqs(); // equal temperament A4 = 440Hz
+    audiO::generateSeconds(); // a constant for now, but could be used to change the length of the note
+    audiO::generateNoteMatrix(); // a matrix of booleans that will be used to determine which notes to play.
+    //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
+    //If true, the note will be played, if false, it will not.
+    //alsabuffer is a buffer of chars that will be used to store the sound data.
     audiO::alsaSetup();
     audiO::start_audio();
     display_thread.join();

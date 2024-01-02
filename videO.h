@@ -5,6 +5,7 @@
 #include <cmath>
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <unordered_map>
 
 namespace videO{
     const double learning_rate = 0.01;
@@ -90,6 +91,8 @@ namespace videO{
 
             void connectWithLayer(Layer* layer1, Layer* layer2);
 
+            Network* getNetwork();
+
     };
 
     double sigmoid(double x);
@@ -103,32 +106,38 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const double NUM_SECONDS = 0.3;
-    const int SAMPLE_RATE = 44100;
+    const float NUM_SECONDS = 0.05;
+    const float SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 2;
-    const int NUM_FRAMES = (int)(((double)(SAMPLE_RATE) * NUM_SECONDS));
+    const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
     const int SIZE = NUM_FRAMES * NUM_CHANNELS * 2;
     const int PLAY_LOOPS = 100;
+    const int SAMPLE_MAX = 32767;
+    const int SAMPLE_MIN = -32768;
+    const float AMPLITUDE_NEURON = 2000*(int)((float)SAMPLE_MAX / (float)MATRIX_ELEMENTS);
 
     snd_pcm_t *handle_alsa;
     int rc_alsa;
     snd_pcm_uframes_t frames;
-    char* alsabuffer;
+    float* alsabuffer;
     bool running = false;
-    char*** sinewaves;
-    double* freqs;
+    float*** sinewaves;
+    float* freqs;
     int* seconds;
     bool** note_matrix;
+    std::unordered_map<int, float> note_map; // maps note_matrix index to frequency
+
+    void generateNoteMap();
 
     bool** generateNoteMatrix();
 
     bool** fireToBool();
 
-    char*** fill3DArrayWithSoundingSines();
+    float*** fill3DArrayWithSoundingSines();
 
     //char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* freqs, int* seconds);
 
-    char* generateSineWaves();
+    float* generateSineWaves();
 
     void play_alsa();
 
@@ -140,7 +149,7 @@ namespace audiO{
 
     void freeArrays();
 
-    double* generateFreqs();
+    float* generateFreqs();
 
     int* generateSeconds();
 
