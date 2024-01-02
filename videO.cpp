@@ -7,11 +7,7 @@
 #include <chrono>
 #include "videO.h"
 
-//alsa and audio stuff
-snd_pcm_uframes_t frames;
-snd_pcm_hw_params_t *params;
-int size2;
-uint val;
+//audiO stuff
 
 float* audiO::generateSineWaves(){ 
     int note_index = 0;
@@ -208,8 +204,8 @@ void audiO::alsaSetup(){
         exit(1);
     }
     
-    frames = audiO::NUM_FRAMES;
-    err = snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &frames, &dir);
+    audiO::frames = audiO::NUM_FRAMES*sizeof(char);
+    err = snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &audiO::frames, &dir);
     if (err < 0) {
         fprintf(stderr, "Error setting period size (%d): %s\n", frames, snd_strerror(err));
         exit(1);
