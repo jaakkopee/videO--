@@ -50,14 +50,16 @@ float audiO::OscillatorBank::getSample(){
 }
 
 float* audiO::generateSineWaves(){
+    int note_index = 0;
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[i * audiO::MATRIX_X_SIZE + j]->setAmplitude(audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation);
             }
             else{
-                audiO::global_oscillator_bank->oscillators[i * audiO::MATRIX_X_SIZE + j]->setAmplitude(0);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
             }
+            note_index++;
         }
     }
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
@@ -283,17 +285,11 @@ void audiO::stop_audio(){
 }
 
 void audiO::setupArrays() {
-
     audiO::freqs = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
     audiO::seconds = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
-    audiO::sinewaves = (float***)malloc(audiO::MATRIX_ELEMENTS * sizeof(float**));
-    audiO::note_matrix = (bool**)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool*));
-    for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
-        audiO::sinewaves[i] = (float**)malloc(audiO::MATRIX_ELEMENTS * sizeof(float*));
-        audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_ELEMENTS * sizeof(bool));
-        for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++) {
-            audiO::sinewaves[i][j] = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
-        }
+    audiO::note_matrix = (bool**)malloc(audiO::MATRIX_X_SIZE * sizeof(bool*));
+    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++) {
+        audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_Y_SIZE * sizeof(bool));
     }
     audiO::alsabuffer = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
 }
@@ -301,14 +297,10 @@ void audiO::setupArrays() {
 void audiO::freeArrays() {
     free(audiO::freqs);
     free(audiO::seconds);
-    for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++) {
+    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++) {
         free(audiO::note_matrix[i]);
-        for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++) {
-            free(audiO::sinewaves[i][j]);
-        }
-        free(audiO::sinewaves[i]);
     }
-    free(audiO::sinewaves);
+    free(audiO::note_matrix);
     free(audiO::alsabuffer);
     snd_pcm_drain(audiO::handle_alsa);
     snd_pcm_close(audiO::handle_alsa);
@@ -682,7 +674,7 @@ int main() {
     videO::globalNetwork->setWeights(0.6);
     audiO::global_oscillator_bank = new audiO::OscillatorBank();
     sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
-    std::thread display_thread(videO::display, &window);
+    
     audiO::setupArrays(); // allocate memory for arrays used by the sound synthesis
     //the arrays are; freqs, seconds, sinewaves, note_matrix, alsabuffer
     //freqs is an array of doubles that will be used to determine the frequency of each note. It is a 100 element array, one for each neuron.
@@ -695,6 +687,7 @@ int main() {
     audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
 
     audiO::alsaSetup();
+    std::thread display_thread(videO::display, &window);
     audiO::start_audio();
     display_thread.join();
     audiO::stop_audio();
