@@ -124,6 +124,7 @@ float* audiO::generateSineWaves(){
 
     return audiO::alsabuffer;
 }
+*/
 
 float* audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
@@ -131,7 +132,7 @@ float* audiO::generateFreqs(){
     }
     return audiO::freqs;
 }
-*/
+
 
 float* audiO::generateSeconds(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
