@@ -137,6 +137,110 @@ namespace audiO{
 
     float* generateSineWaves(); // sound synthesis
 
+    class Oscillator {
+        public:
+            float freq;
+            float amp;
+            float phase;
+            float phase_increment;
+            float* buffer;
+            int buffer_size;
+            int buffer_index;
+            bool running;
+
+            Oscillator(float freq, float amp, float phase);
+
+            float getSample();
+
+            void setFrequency(float frequency);
+
+            void setAmplitude(float amplitude);
+
+            void setPhase(float phase);
+
+            void setPhaseIncrement(float phase_increment);
+
+            void setBuffer(float* buffer);
+
+            void setBufferSize(int buffer_size);
+
+            void setBufferIndex(int buffer_index);
+
+            void setRunning(bool running);
+
+            float getFrequency();
+
+            float getAmplitude();
+
+            float getPhase();
+
+            float getPhaseIncrement();
+
+            float* getBuffer();
+
+            int getBufferSize();
+
+            int getBufferIndex();
+
+            bool getRunning();
+
+    };
+
+    class OscillatorBank {
+        public:
+            int num_oscillators;
+            Oscillator** oscillators;
+            float* buffer;
+            int buffer_size;
+            int buffer_index;
+            bool running;
+
+            OscillatorBank();
+
+            float getSample();
+
+            void setNumOscillators(int num_oscillators);
+
+            void setOscillators(Oscillator* oscillators);
+
+            void setBuffer(float* buffer);
+
+            void setBufferSize(int buffer_size);
+
+            void setBufferIndex(int buffer_index);
+
+            void setRunning(bool running);
+
+            int getNumOscillators();
+
+            Oscillator* getOscillators();
+
+            float* getBuffer();
+
+            int getBufferSize();
+
+            int getBufferIndex();
+
+            bool getRunning();
+
+            void generateWave();
+
+            void generateSineWave();
+
+            void generateSawWave();
+
+            void generateSquareWave();
+
+            void generateTriangleWave();
+
+            void generateNoise();
+
+            void generatePulseWave();
+
+    };
+
+    OscillatorBank* global_oscillator_bank;
+
     void play_alsa();
 
     void play_alsa_thread();
