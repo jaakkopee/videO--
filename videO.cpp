@@ -36,9 +36,17 @@ void audiO::Oscillator::setAmplitude(float amplitude){
 
 audiO::OscillatorBank::OscillatorBank(){
     this->num_oscillators = audiO::MATRIX_ELEMENTS;
+    this->oscillators = new audiO::Oscillator*[this->num_oscillators];
     for (int i = 0; i < this->num_oscillators; i++){
         this->oscillators[i] = new audiO::Oscillator(audiO::freqs[i], audiO::AMPLITUDE_NEURON, 0);
     }
+}
+
+audiO::OscillatorBank::~OscillatorBank(){
+    for (int i = 0; i < this->num_oscillators; i++){
+        delete this->oscillators[i];  // Delete each Oscillator object
+    }
+    delete[] this->oscillators;  // Delete the oscillators array
 }
 
 float audiO::OscillatorBank::getSample(){
@@ -252,12 +260,11 @@ void audiO::audio_thread(){
         mtx.lock();
         audiO::note_matrix = audiO::fireToBool();
         audiO::alsabuffer = audiO::generateSineWaves();
-        char* buffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
         for (int i = 0; i < audiO::NUM_FRAMES; i++){
-            buffer[i] = (char)(audiO::alsabuffer[i]);
+            audiO::audiobuffer[i] = (char)(audiO::alsabuffer[i]);
         }
 
-        audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, buffer, audiO::frames);
+        audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
         if (audiO::rc_alsa == -EPIPE) {
             // EPIPE means underrun
             fprintf(stderr, "underrun occurred\n");
@@ -267,7 +274,6 @@ void audiO::audio_thread(){
         } else if (rc_alsa != (int)audiO::frames) {
             fprintf(stderr, "short write, write %d frames\n", audiO::rc_alsa);
         }
-        free(buffer);
         mtx.unlock();
         //std::this_thread::sleep_for(std::chrono::milliseconds((int)(audiO::SAMPLE_RATE / audiO::NUM_FRAMES)));
 
@@ -292,6 +298,7 @@ void audiO::setupArrays() {
         audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_Y_SIZE * sizeof(bool));
     }
     audiO::alsabuffer = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
+    audiO::audiobuffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
 }
 
 void audiO::freeArrays() {
@@ -302,6 +309,7 @@ void audiO::freeArrays() {
     }
     free(audiO::note_matrix);
     free(audiO::alsabuffer);
+    free(audiO::audiobuffer);
     snd_pcm_drain(audiO::handle_alsa);
     snd_pcm_close(audiO::handle_alsa);
 }
@@ -670,25 +678,39 @@ void videO::display(sf::RenderWindow* window) {
 }
 
 int main() {
+    std::cout << "Init:\n" << std::endl;
     videO::globalNetwork = new videO::Network(videO::NUM_LAYERS, videO::NUM_NEURONS);
+    std::cout << "Network created" << std::endl;
     videO::globalNetwork->setWeights(0.6);
-    audiO::global_oscillator_bank = new audiO::OscillatorBank();
+    std::cout << "Weights set" << std::endl;
     sf::RenderWindow window(sf::VideoMode(1000, 1000), "Neural Network");
-    
-    audiO::setupArrays(); // allocate memory for arrays used by the sound synthesis
+    std::cout << "Window created" << std::endl;
+    audiO::setupArrays();
+    std::cout << "Arrays created" << std::endl;
+    // allocate memory for arrays used by the sound synthesis
     //the arrays are; freqs, seconds, sinewaves, note_matrix, alsabuffer
     //freqs is an array of doubles that will be used to determine the frequency of each note. It is a 100 element array, one for each neuron.
     audiO::generateFreqs(); // equal temperament A4 = 440Hz
+    std::cout << "Freqs generated" << std::endl;
     audiO::generateSeconds(); // a constant for now, but could be used to change the length of the note
+    std::cout << "Seconds generated" << std::endl;
     audiO::generateNoteMatrix(); // a matrix of booleans that will be used to determine which notes to play.
+    std::cout << "Note matrix generated" << std::endl;
     //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
     //If true, the note will be played, if false, it will not.
     //alsabuffer is a buffer of chars that will be used to store the sound data.
     audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
-
+    std::cout << "Note map generated" << std::endl;
     audiO::alsaSetup();
+    std::cout << "Alsa setup" << std::endl;
+    audiO::global_oscillator_bank = new audiO::OscillatorBank();
+    std::cout << "Oscillator bank created" << std::endl;
     std::thread display_thread(videO::display, &window);
+    std::cout << "Display thread created" << std::endl;
     audiO::start_audio();
+    std::cout << "Audio started" << std::endl;
+
+
     display_thread.join();
     audiO::stop_audio();
     audiO::freeArrays();
