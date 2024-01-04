@@ -108,7 +108,7 @@ namespace audiO{
     const int NUM_SINES = 10;
     const float NUM_SECONDS = 0.3;
     const float SAMPLE_RATE = 44100;
-    const int NUM_CHANNELS = 2;
+    const int NUM_CHANNELS = 1;
     const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
     const int SIZE = NUM_FRAMES * NUM_CHANNELS * 2;
     const int PLAY_LOOPS = 100;
@@ -120,7 +120,7 @@ namespace audiO{
     int rc_alsa;
     snd_pcm_uframes_t frames;
     float* alsabuffer;
-    char* audiobuffer;
+    short* audiobuffer;
     bool running = false;
     float*** sinewaves;
     float* freqs;
@@ -134,7 +134,7 @@ namespace audiO{
 
     bool** fireToBool();
 
-    //char* generateSineWaves(bool** note_matrix, char* buffer, int numSines, int* freqs, int* seconds);
+    //short* generateSineWaves(bool** note_matrix, short* buffer, int numSines, int* freqs, int* seconds);
 
     float* generateSineWaves(); // sound synthesis
 

@@ -239,7 +239,7 @@ void audiO::alsaSetup(){
         exit(1);
     }
     
-    audiO::frames = audiO::NUM_FRAMES*sizeof(char);
+    audiO::frames = audiO::NUM_FRAMES*sizeof(short);
     err = snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &audiO::frames, &dir);
     if (err < 0) {
         fprintf(stderr, "Error setting period size (%d): %s\n", frames, snd_strerror(err));
@@ -261,7 +261,7 @@ void audiO::audio_thread(){
         audiO::note_matrix = audiO::fireToBool();
         audiO::alsabuffer = audiO::generateSineWaves();
         for (int i = 0; i < audiO::NUM_FRAMES; i++){
-            audiO::audiobuffer[i] = (char)(audiO::alsabuffer[i]);
+            audiO::audiobuffer[i] = (short)audiO::alsabuffer[i];
         }
 
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
@@ -298,7 +298,7 @@ void audiO::setupArrays() {
         audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_Y_SIZE * sizeof(bool));
     }
     audiO::alsabuffer = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
-    audiO::audiobuffer = (char*)malloc(audiO::NUM_FRAMES * sizeof(char));
+    audiO::audiobuffer = (short*)malloc(audiO::NUM_FRAMES * sizeof(short));
 }
 
 void audiO::freeArrays() {
@@ -698,7 +698,7 @@ int main() {
     std::cout << "Note matrix generated" << std::endl;
     //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
     //If true, the note will be played, if false, it will not.
-    //alsabuffer is a buffer of chars that will be used to store the sound data.
+    //alsabuffer is a buffer of shorts that will be used to store the sound data.
     audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
     std::cout << "Note map generated" << std::endl;
     audiO::alsaSetup();
