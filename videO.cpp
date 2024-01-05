@@ -62,7 +62,7 @@ float* audiO::generateSineWaves(){
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(1.0);
             }
             else{
                 audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
@@ -239,7 +239,7 @@ void audiO::alsaSetup(){
         exit(1);
     }
     
-    audiO::frames = audiO::NUM_FRAMES*sizeof(short);
+    audiO::frames = audiO::NUM_FRAMES;
     err = snd_pcm_hw_params_set_period_size_near(audiO::handle_alsa, params, &audiO::frames, &dir);
     if (err < 0) {
         fprintf(stderr, "Error setting period size (%d): %s\n", frames, snd_strerror(err));
