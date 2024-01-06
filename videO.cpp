@@ -110,7 +110,7 @@ std::vector<float> audiO::generateSineWaves(){
         else if (audiO::audio_float_buffer[i] < -1){
             audiO::audio_float_buffer[i] = -1;
         }
-        audiO::audio_float_buffer[i] *= audiO::SAMPLE_MAX-1024;
+        audiO::audio_float_buffer[i] *= audiO::SAMPLE_MAX;
     }
     /*
     //normalize signal
