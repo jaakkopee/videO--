@@ -221,7 +221,7 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
         layerIndex++;
         for (auto neuron : layer->neurons) {
             neuronIndex++;
-            if (neuron->activation > 0.09) {
+            if (neuron->activation > 0.1) {
                 audiO::note_matrix[layerIndex][neuronIndex] = true;
             }
             else {
@@ -305,7 +305,6 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
-        audiO::fireToBool();
         audiO::generateSineWaves();
         audiO::audiobuffer = (short*)audiO::audio_float_buffer.data();
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
@@ -663,7 +662,8 @@ void videO::display(sf::RenderWindow* window) {
     while (window->isOpen()) {
         mutex.lock();
         window->clear();
-        videO::globalNetwork->update();           
+        videO::globalNetwork->update();  
+        audiO::fireToBool();         
         for (int i = 0; i < videO::globalNetwork->layers.size(); i++) {
             for (int j = 0; j < videO::globalNetwork->layers[i]->neurons.size(); j++) {
                 double radius = videO::globalNetwork->layers[i]->neurons[j]->activation * 32;
