@@ -218,16 +218,16 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
     int layerIndex = 0;
     int neuronIndex = 0;
     for (auto layer : videO::globalNetwork->layers) {
-        layerIndex++;
         for (auto neuron : layer->neurons) {
-            neuronIndex++;
             if (neuron->activation > 0.1) {
                 audiO::note_matrix[layerIndex][neuronIndex] = true;
             }
             else {
                 audiO::note_matrix[layerIndex][neuronIndex] = false;
             }
+            neuronIndex++;
         }
+        layerIndex++;
     }
     return audiO::note_matrix;
 }
