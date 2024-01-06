@@ -119,24 +119,24 @@ namespace audiO{
     snd_pcm_t *handle_alsa;
     int rc_alsa;
     snd_pcm_uframes_t frames;
-    float* alsabuffer;
+    std::vector<float> alsabuffer;
     short* audiobuffer;
     bool running = false;
-    float*** sinewaves;
-    float* freqs;
-    float* seconds;
-    bool** note_matrix;
+    //float*** sinewaves;
+    std::vector<float> freqs;
+    std::vector<float> seconds;
+    std::vector<std::vector<bool>> note_matrix;
     std::unordered_map<int, float> note_map; // maps note_matrix index to frequency
 
     void generateNoteMap();
 
-    bool** generateNoteMatrix();
+    std::vector<std::vector<bool>> generateNoteMatrix();
 
-    bool** fireToBool();
+    std::vector<std::vector<bool>> fireToBool();
 
     //short* generateSineWaves(bool** note_matrix, short* buffer, int numSines, int* freqs, int* seconds);
 
-    float* generateSineWaves(); // sound synthesis
+    std::vector<float> generateSineWaves(); // sound synthesis
 
     class Oscillator {
         public:
@@ -150,6 +150,8 @@ namespace audiO{
             bool running;
 
             Oscillator(float freq, float amp, float phase);
+
+            ~Oscillator();
 
             float getSample();
 
@@ -254,9 +256,9 @@ namespace audiO{
 
     void freeArrays();
 
-    float* generateFreqs();
+    std::vector<float> generateFreqs();
 
-    float* generateSeconds();
+    std::vector<float> generateSeconds();
 
     void alsaSetup();
 

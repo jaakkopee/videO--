@@ -5,33 +5,65 @@
 #include <mutex>
 #include <random>
 #include <chrono>
+#include <vector>
 #include "videO.h"
 
 //audiO stuff
 
 audiO::Oscillator::Oscillator(float freq, float amp, float phase){
     this->freq = freq;
+    std::cout << "freq: " << this->freq << std::endl;
     this->amp = amp;
     this->phase = phase;
-    this->phase_increment = 1 / this->freq;
+    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
+    this->buffer_size = audiO::SAMPLE_RATE / this->freq;
+    std::cout << "buffer size: " << this->buffer_size << std::endl;
+    this->buffer = new float[this->buffer_size];
+    this->buffer_index = 0;
+
+    //calculate the buffer
+    for (int i = 0; i < this->buffer_size; i++){
+        this->buffer[i] = sin(2 * M_PI * this->phase);
+        this->phase += this->phase_increment;
+        if (this->phase > 1){
+            this->phase -= 1;
+        }
+    }
 }
 
 float audiO::Oscillator::getSample(){
-    float sample = this->amp * sin(2 * M_PI * this->phase);
-    this->phase += this->phase_increment;
-    if (this->phase > 1){
-        this->phase -= 1;
+    float sample = this->buffer[this->buffer_index] * this->amp;
+    this->buffer_index++;
+    if (this->buffer_index >= this->buffer_size){
+        this->buffer_index = 0;
     }
     return sample;
 }
 
 void audiO::Oscillator::setFrequency(float frequency){
     this->freq = frequency;
-    this->phase_increment = 1 / this->freq;
+    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
+    this->buffer_size = (int)(audiO::SAMPLE_RATE / this->freq);
+    delete[] this->buffer;
+    this->buffer = new float[this->buffer_size];
+    this->buffer_index = 0;
+
+    //calculate the buffer
+    for (int i = 0; i < this->buffer_size; i++){
+        this->buffer[i] = sin(2 * M_PI * this->phase);
+        this->phase += this->phase_increment;
+        if (this->phase > 1){
+            this->phase -= 1;
+        }
+    }
 }
 
 void audiO::Oscillator::setAmplitude(float amplitude){
     this->amp = amplitude;
+}
+
+audiO::Oscillator::~Oscillator(){
+    delete[] this->buffer;
 }
 
 audiO::OscillatorBank::OscillatorBank(){
@@ -57,12 +89,12 @@ float audiO::OscillatorBank::getSample(){
     return sample;
 }
 
-float* audiO::generateSineWaves(){
+std::vector<float> audiO::generateSineWaves(){
     int note_index = 0;
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(1.0);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0.01);
             }
             else{
                 audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
@@ -73,6 +105,7 @@ float* audiO::generateSineWaves(){
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
         audiO::alsabuffer[i] = audiO::global_oscillator_bank->getSample();
     }
+    
     //normalize signal
     //1. find max
     float max = 0;
@@ -82,10 +115,17 @@ float* audiO::generateSineWaves(){
         }
     }
     //2. divide all by max
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::alsabuffer[i] = (audiO::alsabuffer[i] / max) * audiO::SAMPLE_MAX;
+    if (max > 0){
+        for (int i = 0; i < audiO::NUM_FRAMES; i++){
+            audiO::alsabuffer[i] = (audiO::alsabuffer[i] / max) * audiO::SAMPLE_MAX;
+        }
     }
-
+    else{
+        for (int i = 0; i < audiO::NUM_FRAMES; i++){
+            audiO::alsabuffer[i] = 0;
+        }
+    }
+    
     return audiO::alsabuffer;
 }
 /*
@@ -136,7 +176,7 @@ float* audiO::generateSineWaves(){
 }
 */
 
-float* audiO::generateFreqs(){
+std::vector<float> audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
         audiO::freqs[i] = audiO::note_map[i];
     }
@@ -144,7 +184,7 @@ float* audiO::generateFreqs(){
 }
 
 
-float* audiO::generateSeconds(){
+std::vector<float> audiO::generateSeconds(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
         audiO::seconds[i] = audiO::NUM_SECONDS;
     }
@@ -153,12 +193,12 @@ float* audiO::generateSeconds(){
 
 void audiO::generateNoteMap(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
-        audiO::note_map[i] = 220 * pow(2, (double)i / 12); //equal temperament A4 = 440Hz
+        audiO::note_map[i] = (i+1) * 8;
     }
 }
 
 
-bool** audiO::generateNoteMatrix(){
+std::vector<std::vector<bool>> audiO::generateNoteMatrix(){
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             audiO::note_matrix[i][j] = false;
@@ -167,7 +207,7 @@ bool** audiO::generateNoteMatrix(){
     return audiO::note_matrix;
 }
 //converts the firing neurons to a matrix of booleans
-bool** audiO::fireToBool(){
+std::vector<std::vector<bool>> audiO::fireToBool(){
     int layerIndex = 0;
     int neuronIndex = 0;
     for (auto layer : videO::globalNetwork->layers) {
@@ -258,25 +298,22 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
-        audiO::note_matrix = audiO::fireToBool();
-        audiO::alsabuffer = audiO::generateSineWaves();
-        for (int i = 0; i < audiO::NUM_FRAMES; i++){
-            audiO::audiobuffer[i] = (short)audiO::alsabuffer[i];
-        }
-
+        audiO::fireToBool();
+        audiO::generateSineWaves();
+        audiO::audiobuffer = (short*)audiO::alsabuffer.data();
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
         if (audiO::rc_alsa == -EPIPE) {
-            // EPIPE means underrun
+            /* EPIPE means underrun */
             fprintf(stderr, "underrun occurred\n");
             snd_pcm_prepare(audiO::handle_alsa);
-        } else if (audiO::rc_alsa < 0) {
+        }
+        else if (audiO::rc_alsa < 0) {
             fprintf(stderr, "error from writei: %s\n", snd_strerror(audiO::rc_alsa));
-        } else if (rc_alsa != (int)audiO::frames) {
+        }
+        else if (audiO::rc_alsa != (int)audiO::frames) {
             fprintf(stderr, "short write, write %d frames\n", audiO::rc_alsa);
         }
         mtx.unlock();
-        //std::this_thread::sleep_for(std::chrono::milliseconds((int)(audiO::SAMPLE_RATE / audiO::NUM_FRAMES)));
-
     }
 }
 
@@ -290,25 +327,17 @@ void audiO::stop_audio(){
     audiO::running = false;
 }
 
+
 void audiO::setupArrays() {
-    audiO::freqs = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
-    audiO::seconds = (float*)malloc(audiO::MATRIX_ELEMENTS * sizeof(float));
-    audiO::note_matrix = (bool**)malloc(audiO::MATRIX_X_SIZE * sizeof(bool*));
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++) {
-        audiO::note_matrix[i] = (bool*)malloc(audiO::MATRIX_Y_SIZE * sizeof(bool));
-    }
-    audiO::alsabuffer = (float*)malloc(audiO::NUM_FRAMES * sizeof(float));
+    audiO::freqs = std::vector<float>(audiO::MATRIX_ELEMENTS);
+    audiO::seconds = std::vector<float>(audiO::MATRIX_ELEMENTS);
+    audiO::note_matrix = std::vector<std::vector<bool>>(audiO::MATRIX_X_SIZE, std::vector<bool>(audiO::MATRIX_Y_SIZE));
+    audiO::alsabuffer = std::vector<float>(audiO::NUM_FRAMES);
     audiO::audiobuffer = (short*)malloc(audiO::NUM_FRAMES * sizeof(short));
 }
 
+
 void audiO::freeArrays() {
-    free(audiO::freqs);
-    free(audiO::seconds);
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++) {
-        free(audiO::note_matrix[i]);
-    }
-    free(audiO::note_matrix);
-    free(audiO::alsabuffer);
     free(audiO::audiobuffer);
     snd_pcm_drain(audiO::handle_alsa);
     snd_pcm_close(audiO::handle_alsa);
@@ -690,6 +719,8 @@ int main() {
     // allocate memory for arrays used by the sound synthesis
     //the arrays are; freqs, seconds, sinewaves, note_matrix, alsabuffer
     //freqs is an array of doubles that will be used to determine the frequency of each note. It is a 100 element array, one for each neuron.
+    audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
+    std::cout << "Note map generated" << std::endl;
     audiO::generateFreqs(); // equal temperament A4 = 440Hz
     std::cout << "Freqs generated" << std::endl;
     audiO::generateSeconds(); // a constant for now, but could be used to change the length of the note
@@ -699,8 +730,7 @@ int main() {
     //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
     //If true, the note will be played, if false, it will not.
     //alsabuffer is a buffer of shorts that will be used to store the sound data.
-    audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
-    std::cout << "Note map generated" << std::endl;
+
     audiO::alsaSetup();
     std::cout << "Alsa setup" << std::endl;
     audiO::global_oscillator_bank = new audiO::OscillatorBank();
