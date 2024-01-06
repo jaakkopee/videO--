@@ -221,7 +221,7 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
         layerIndex++;
         for (auto neuron : layer->neurons) {
             neuronIndex++;
-            if (neuron->activation > 0.1) {
+            if (neuron->activation > 0.2) {
                 audiO::note_matrix[layerIndex][neuronIndex] = true;
             }
             else {
