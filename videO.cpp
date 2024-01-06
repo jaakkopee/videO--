@@ -94,7 +94,7 @@ std::vector<float> audiO::generateSineWaves(){
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0.01);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0.8);
             }
             else{
                 audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
@@ -104,8 +104,15 @@ std::vector<float> audiO::generateSineWaves(){
     }
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
         audiO::alsabuffer[i] = audiO::global_oscillator_bank->getSample();
+        if (audiO::alsabuffer[i] > 1){
+            audiO::alsabuffer[i] = 1;
+        }
+        else if (audiO::alsabuffer[i] < -1){
+            audiO::alsabuffer[i] = -1;
+        }
+        audiO::alsabuffer[i] *= audiO::SAMPLE_MAX-1024;
     }
-    
+    /*
     //normalize signal
     //1. find max
     float max = 0;
@@ -125,7 +132,7 @@ std::vector<float> audiO::generateSineWaves(){
             audiO::alsabuffer[i] = 0;
         }
     }
-    
+    */
     return audiO::alsabuffer;
 }
 /*
