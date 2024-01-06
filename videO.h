@@ -119,7 +119,7 @@ namespace audiO{
     snd_pcm_t *handle_alsa;
     int rc_alsa;
     snd_pcm_uframes_t frames;
-    std::vector<float> alsabuffer;
+    std::vector<float> audio_float_buffer;
     short* audiobuffer;
     bool running = false;
     //float*** sinewaves;
