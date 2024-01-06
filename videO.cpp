@@ -454,6 +454,18 @@ double target4[10][10] = {
     {0,0,0,0,0,0,0,0,0,0}
 };
 
+double target5[10][10] = {
+{1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1},
+{0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1.0},
+{0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1.0,0.9},
+{0.7,0.6,0.5,0.4,0.3,0.2,0.1,1.0,0.9,0.8},
+{0.6,0.5,0.4,0.3,0.2,0.1,1.0,0.9,0.8,0.7},
+{0.5,0.4,0.3,0.2,0.1,1.0,0.9,0.8,0.7,0.6},
+{0.4,0.3,0.2,0.1,1.0,0.9,0.8,0.7,0.6,0.5},
+{0.3,0.2,0.1,1.0,0.9,0.8,0.7,0.6,0.5,0.4},
+{0.2,0.1,1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3},
+{0.1,1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2}
+};
 
 videO::Network::Network(int n_layers, int n_neurons) {
     for (int i = 0; i < n_layers; i++) {
@@ -517,6 +529,14 @@ void videO::Network::backpropWithTarget() {
         for (int i = 0; i < layers.size(); i++) {
             for (int j = 0; j < layers[i]->neurons.size(); j++) {
                 targets[i][j] = target4[i][j];
+            }
+        }
+    }
+
+    else if (target == 5) {
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                targets[i][j] = target5[i][j];
             }
         }
     }
@@ -704,6 +724,9 @@ void videO::display(sf::RenderWindow* window) {
                 }
                 if (event.key.code == sf::Keyboard::Num4) {
                     videO::globalNetwork->setTarget(4);
+                }
+                if (event.key.code == sf::Keyboard::Num5) {
+                    videO::globalNetwork->setTarget(5);
                 }
             }
         }
