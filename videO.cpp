@@ -200,7 +200,7 @@ std::vector<float> audiO::generateSeconds(){
 
 void audiO::generateNoteMap(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
-        audiO::note_map[i] = (i+1) * 8;
+        audiO::note_map[i] = (i+1) * 80;
     }
 }
 
@@ -221,7 +221,7 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
         layerIndex++;
         for (auto neuron : layer->neurons) {
             neuronIndex++;
-            if (neuron->firing) {
+            if (neuron->activation > 0.1) {
                 audiO::note_matrix[layerIndex][neuronIndex] = true;
             }
             else {
