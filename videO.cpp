@@ -13,7 +13,7 @@ audiO::Oscillator::Oscillator(float freq, float amp, float phase){
     this->freq = freq;
     this->amp = amp;
     this->phase = phase;
-    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
+    this->phase_increment = 1 / this->freq;
 }
 
 float audiO::Oscillator::getSample(){
@@ -27,7 +27,7 @@ float audiO::Oscillator::getSample(){
 
 void audiO::Oscillator::setFrequency(float frequency){
     this->freq = frequency;
-    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
+    this->phase_increment = 1 / this->freq;
 }
 
 void audiO::Oscillator::setAmplitude(float amplitude){
@@ -38,7 +38,7 @@ audiO::OscillatorBank::OscillatorBank(){
     this->num_oscillators = audiO::MATRIX_ELEMENTS;
     this->oscillators = new audiO::Oscillator*[this->num_oscillators];
     for (int i = 0; i < this->num_oscillators; i++){
-        this->oscillators[i] = new audiO::Oscillator(audiO::freqs[i], audiO::AMPLITUDE_NEURON, 0);
+        this->oscillators[i] = new audiO::Oscillator(audiO::freqs[i], 0.01, 0);
     }
 }
 
