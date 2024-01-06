@@ -94,7 +94,7 @@ std::vector<float> audiO::generateSineWaves(){
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0.6);
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(videO::globalNetwork->layers[i]->neurons[j]->activation*128);
             }
             else{
                 audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
@@ -221,7 +221,7 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
         layerIndex++;
         for (auto neuron : layer->neurons) {
             neuronIndex++;
-            if (neuron->activation > 0.15) {
+            if (neuron->activation > 0.09) {
                 audiO::note_matrix[layerIndex][neuronIndex] = true;
             }
             else {
