@@ -241,9 +241,10 @@ void audiO::setOscAmpsWithNeuronActivations(){
             double activation = videO::globalNetwork->layers[i]->neurons[j]->activation;
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
             //neuron->activation += lfo1.getSample();
-            if (activation > 0.5){
+            if (activation > 0.7){
                 std::thread t0 = std::thread(audiO::rampAmplitudeThread, audiO::global_oscillator_bank->oscillators[note_index], neuron);
                 t0.detach();
+                //std::cout << "thread started, freq: " << audiO::global_oscillator_bank->oscillators[note_index]->freq<<std::endl;
             }
             else{
                 audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
@@ -257,18 +258,15 @@ std::mutex mtx2;
 void audiO::rampAmplitudeThread(Oscillator* osc, videO::Neuron* neuron){
     mtx2.lock();
     float amp = osc->amp;
-    float target_amp = neuron->activation;
-    if (amp < target_amp){
-        while (amp < target_amp){
-            amp += 0.01;
-            osc->setAmplitude(amp);
-        }
+    float amp_max = neuron->activation*0.333+0.03;
+    float amp_increment = (amp_max - amp) / 100;
+    for (int i = 0; i < 100; i++){
+        amp += amp_increment;
+        osc->setAmplitude(amp);
     }
-    else{
-        while (amp > target_amp){
-            amp -= 0.01;
-            osc->setAmplitude(amp);
-        }
+    for (int i = 0; i < 100; i++){
+        amp -= amp_increment;
+        osc->setAmplitude(amp);
     }
     mtx2.unlock();
 }
