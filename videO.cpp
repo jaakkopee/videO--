@@ -258,7 +258,7 @@ std::mutex mtx2;
 void audiO::rampAmplitudeThread(Oscillator* osc, videO::Neuron* neuron){
     mtx2.lock();
     float amp = osc->amp;
-    float amp_max = neuron->activation*0.333+0.03;
+    float amp_max = neuron->activation+0.03;
     float amp_increment = (amp_max - amp) / 100;
     for (int i = 0; i < 100; i++){
         amp += amp_increment;
