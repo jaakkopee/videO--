@@ -796,6 +796,10 @@ void videO::display(sf::RenderWindow* window) {
                 if (event.key.code == sf::Keyboard::Enter) {
                     videO::globalNetwork->setWeights(-0.01);
                 }
+                //keypad A
+                if (event.key.code == sf::Keyboard::A) {
+                    videO::globalNetwork->setWeights(0.1);
+                }
                 if (event.key.code == sf::Keyboard::Num1) {
                     videO::globalNetwork->setTarget(1);
                 }
