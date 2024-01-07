@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 namespace videO{
-    const double learning_rate = 0.01;
+    const double learning_rate = 0.02;
     const double globalThreshold = 0.999;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
@@ -106,7 +106,7 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const float NUM_SECONDS = 0.3;
+    const float NUM_SECONDS = 0.5;
     const float SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 1;
     const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
