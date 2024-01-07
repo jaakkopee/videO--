@@ -618,7 +618,7 @@ void videO::Network::backpropWithTarget() {
     int oscIndex = 0;
     for (int i = 0; i < layers.size(); i++) {
         for (int j = 0; j < layers[i]->neurons.size(); j++) {
-            targets[i][j] += audiO::global_oscillator_bank->oscillators[oscIndex]->amp*0.26;
+            targets[i][j] += audiO::global_oscillator_bank->oscillators[oscIndex]->amp*0.3;
             oscIndex++;
         }
     }

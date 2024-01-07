@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 namespace videO{
-    const double learning_rate = 0.02;
+    const double learning_rate = 0.015;
     const double globalThreshold = 0.999;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
