@@ -254,7 +254,7 @@ namespace audiO{
 
     void audio_thread();
 
-    void rampAmplitudeThread(Oscillator* osc);
+    void rampAmplitudeThread(Oscillator* osc, videO::Neuron* neuron);
 
     void setupArrays();
 
