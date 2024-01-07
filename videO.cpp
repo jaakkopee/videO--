@@ -240,7 +240,7 @@ void audiO::setOscAmpsWithNeuronActivations(){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             double activation = videO::globalNetwork->layers[i]->neurons[j]->activation;
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
-            if (activation > 0.1){
+            if (activation > 0.5){
                 std::thread t0 = std::thread(audiO::rampAmplitudeThread, audiO::global_oscillator_bank->oscillators[note_index]);
                 t0.detach();
             }
@@ -257,11 +257,11 @@ void audiO::rampAmplitudeThread(Oscillator* osc){
     mtx2.lock();
     //attack
     for (int i = 0; i < 50; i++){
-        osc->setAmplitude(osc->amp + 0.0002);
+        osc->setAmplitude(osc->amp + 0.002);
     }
     //decay
     for (int i = 0; i < 50; i++){
-        osc->setAmplitude(osc->amp - 0.0002);
+        osc->setAmplitude(osc->amp - 0.002);
     }
     mtx2.unlock();
 }
@@ -578,7 +578,7 @@ void videO::Network::backpropWithTarget() {
     int oscIndex = 0;
     for (int i = 0; i < layers.size(); i++) {
         for (int j = 0; j < layers[i]->neurons.size(); j++) {
-            targets[i][j] += audiO::global_oscillator_bank->oscillators[oscIndex]->amp*62;
+            targets[i][j] += audiO::global_oscillator_bank->oscillators[oscIndex]->amp*0.1;
             oscIndex++;
         }
     }
