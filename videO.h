@@ -106,7 +106,7 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const float NUM_SECONDS = 0.05;
+    const float NUM_SECONDS = 0.3;
     const float SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 1;
     const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
@@ -133,6 +133,8 @@ namespace audiO{
     std::vector<std::vector<bool>> generateNoteMatrix();
 
     std::vector<std::vector<bool>> fireToBool();
+
+    void setOscAmpsWithNeuronActivations();
 
     //short* generateSineWaves(bool** note_matrix, short* buffer, int numSines, int* freqs, int* seconds);
 
@@ -251,6 +253,8 @@ namespace audiO{
     void play_alsa_thread();
 
     void audio_thread();
+
+    void rampAmplitudeThread(Oscillator* osc);
 
     void setupArrays();
 

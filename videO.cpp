@@ -90,6 +90,7 @@ float audiO::OscillatorBank::getSample(){
 }
 
 std::vector<float> audiO::generateSineWaves(){
+    /*
     int note_index = 0;
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
@@ -102,6 +103,7 @@ std::vector<float> audiO::generateSineWaves(){
             note_index++;
         }
     }
+    */
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
         audiO::audio_float_buffer[i] = audiO::global_oscillator_bank->getSample();
         if (audiO::audio_float_buffer[i] > 1){
@@ -200,7 +202,7 @@ std::vector<float> audiO::generateSeconds(){
 
 void audiO::generateNoteMap(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
-        audiO::note_map[i] = (i+1) * 80;
+        audiO::note_map[i] = (i+1) * 44;
     }
 }
 
@@ -230,6 +232,38 @@ std::vector<std::vector<bool>> audiO::fireToBool(){
         layerIndex++;
     }
     return audiO::note_matrix;
+}
+
+void audiO::setOscAmpsWithNeuronActivations(){
+    int note_index = 0;
+    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
+        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
+            double activation = videO::globalNetwork->layers[i]->neurons[j]->activation;
+            videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
+            if (activation > 0.1){
+                std::thread t0 = std::thread(audiO::rampAmplitudeThread, audiO::global_oscillator_bank->oscillators[note_index]);
+                t0.detach();
+            }
+            else{
+                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
+            }
+            note_index++;
+        }
+    }
+}
+
+std::mutex mtx2;
+void audiO::rampAmplitudeThread(Oscillator* osc){
+    mtx2.lock();
+    //attack
+    for (int i = 0; i < 50; i++){
+        osc->setAmplitude(osc->amp + 0.0002);
+    }
+    //decay
+    for (int i = 0; i < 50; i++){
+        osc->setAmplitude(osc->amp - 0.0002);
+    }
+    mtx2.unlock();
 }
 
 void audiO::alsaSetup(){
@@ -368,7 +402,7 @@ videO::Neuron::Neuron() {
     activation = 0;
     firing = false;
     connections = std::vector<videO::Connection*>();
-    add_to_counter = 0.06;
+    add_to_counter = 0.01;
 }
 
 videO::Connection::Connection(videO::Neuron* n1, videO::Neuron* n2, double w): neuron_from(n1), neuron_to(n2), weight(w) {
@@ -541,6 +575,15 @@ void videO::Network::backpropWithTarget() {
         }
     }
 
+    int oscIndex = 0;
+    for (int i = 0; i < layers.size(); i++) {
+        for (int j = 0; j < layers[i]->neurons.size(); j++) {
+            targets[i][j] += audiO::global_oscillator_bank->oscillators[oscIndex]->amp*62;
+            oscIndex++;
+        }
+    }
+
+
     double** activations = new double*[layers.size()];
     for (int i = 0; i < layers.size(); i++) {
         activations[i] = new double[layers[i]->neurons.size()];
@@ -683,7 +726,7 @@ void videO::display(sf::RenderWindow* window) {
         mutex.lock();
         window->clear();
         videO::globalNetwork->update();  
-        audiO::fireToBool();         
+        audiO::setOscAmpsWithNeuronActivations();         
         for (int i = 0; i < videO::globalNetwork->layers.size(); i++) {
             for (int j = 0; j < videO::globalNetwork->layers[i]->neurons.size(); j++) {
                 double radius = videO::globalNetwork->layers[i]->neurons[j]->activation * 32;
