@@ -783,6 +783,36 @@ void videO::display(sf::RenderWindow* window) {
                 window->draw(circle);
             }
         }
+        // Load a font
+        sf::Font font;
+        if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+            // error handling
+        }
+
+        // Create a text object
+        sf::Text text;
+
+        // Set the string to display the current pattern
+        text.setString("Current pattern: " + std::to_string(videO::globalNetwork->target));
+
+        // Set the font
+        text.setFont(font);
+
+        // Set the character size
+        text.setCharacterSize(18); // in pixels, not points!
+
+        // Set the color
+        text.setFillColor(sf::Color::Red);
+
+        // Set the text style
+        text.setStyle(sf::Text::Bold | sf::Text::Underlined);
+
+        // Set the position
+        text.setPosition(0, 0);
+
+        // Draw the text
+        window->draw(text);
+
         //poll for events
         sf::Event event;
         while (window->pollEvent(event)) {
