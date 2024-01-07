@@ -866,9 +866,6 @@ int main() {
     std::cout << "Window created" << std::endl;
     audiO::setupArrays();
     std::cout << "Arrays created" << std::endl;
-    // allocate memory for arrays used by the sound synthesis
-    //the arrays are; freqs, seconds, sinewaves, note_matrix, audio_float_buffer
-    //freqs is an array of doubles that will be used to determine the frequency of each note. It is a 100 element array, one for each neuron.
     audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
     std::cout << "Note map generated" << std::endl;
     audiO::generateFreqs(); // equal temperament A4 = 440Hz
