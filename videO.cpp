@@ -753,12 +753,14 @@ void videO::display(sf::RenderWindow* window) {
         mutex.lock();
         window->clear();
         videO::globalNetwork->update();  
-        audiO::setOscAmpsWithNeuronActivations();         
+        audiO::setOscAmpsWithNeuronActivations(); 
+        int matrixElements = videO::NUM_LAYERS * videO::NUM_NEURONS;        
         for (int i = 0; i < videO::globalNetwork->layers.size(); i++) {
             for (int j = 0; j < videO::globalNetwork->layers[i]->neurons.size(); j++) {
-                double radius = videO::globalNetwork->layers[i]->neurons[j]->activation * 32;
+                double radius = videO::globalNetwork->layers[i]->neurons[j]->activation * matrixElements/3;
                 sf::CircleShape circle(radius);
-                circle.setPosition(100 * i+50-radius, 100 * j+50-radius);
+
+                circle.setPosition(matrixElements*i + matrixElements/2 - radius, matrixElements*j + matrixElements/2 - radius);
                 if (videO::globalNetwork->layers[i]->neurons[j]->firing) {
                     circle.setFillColor(sf::Color::Red);
                     videO::globalNetwork->layers[i]->neurons[j]->firing = false;
