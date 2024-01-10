@@ -89,6 +89,11 @@ float audiO::OscillatorBank::getSample(){
     return sample;
 }
 
+
+float audiO::sigmoidSaturator(float x){
+    return (1 / (1 + exp(-x)))*2-1; //sigmoid function, returns a value between -1 and 1
+}
+
 std::vector<float> audiO::generateSineWaves(){
     /*
     int note_index = 0;
@@ -106,11 +111,12 @@ std::vector<float> audiO::generateSineWaves(){
     */
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
         audiO::audio_float_buffer[i] = audiO::global_oscillator_bank->getSample();
-        if (audiO::audio_float_buffer[i] > 1){
-            audiO::audio_float_buffer[i] = 1;
+        audiO::audio_float_buffer[i] = sigmoidSaturator(audiO::audio_float_buffer[i]);
+        if (audiO::audio_float_buffer[i] > 1.5){
+            audiO::audio_float_buffer[i] = 1.5;
         }
-        else if (audiO::audio_float_buffer[i] < -1){
-            audiO::audio_float_buffer[i] = -1;
+        else if (audiO::audio_float_buffer[i] < -1.5){
+            audiO::audio_float_buffer[i] = -1.5;
         }
         audiO::audio_float_buffer[i] *= audiO::SAMPLE_MAX;
     }
@@ -202,7 +208,7 @@ std::vector<float> audiO::generateSeconds(){
 
 void audiO::generateNoteMap(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
-        audiO::note_map[i] = (i+1) * 44;
+        audiO::note_map[i] = (i+1) * 43.2;
     }
 }
 
@@ -238,10 +244,11 @@ void audiO::setOscAmpsWithNeuronActivations(){
     int note_index = 0;
     for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
-            double activation = videO::globalNetwork->layers[i]->neurons[j]->activation;
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
             //neuron->activation += lfo1.getSample();
-            if (activation > 0.7){
+            if (neuron->activation > videO::globalThreshold && global_oscillator_bank->oscillators[note_index]->amp == 0){
+                neuron->firing = true;
+                neuron->activation = 0;
                 std::thread t0 = std::thread(audiO::rampAmplitudeThread, audiO::global_oscillator_bank->oscillators[note_index], neuron);
                 t0.detach();
                 //std::cout << "thread started, freq: " << audiO::global_oscillator_bank->oscillators[note_index]->freq<<std::endl;
@@ -257,18 +264,25 @@ void audiO::setOscAmpsWithNeuronActivations(){
 std::mutex mtx2;
 void audiO::rampAmplitudeThread(Oscillator* osc, videO::Neuron* neuron){
     mtx2.lock();
-    float amp = osc->amp;
-    float amp_max = neuron->activation+0.03;
-    float amp_increment = (amp_max - amp) / 100;
-    for (int i = 0; i < 100; i++){
-        amp += amp_increment;
-        osc->setAmplitude(amp);
-    }
-    for (int i = 0; i < 100; i++){
-        amp -= amp_increment;
-        osc->setAmplitude(amp);
-    }
+    neuron->firing = true;
+    osc->amp = 0;
     mtx2.unlock();
+
+    while (osc->amp <= 0.1){
+        mtx2.lock();
+        osc->amp += 0.0001;
+        mtx2.unlock();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (osc->amp <= 0){
+        mtx2.lock();
+        osc->amp += 0.0001;
+        mtx2.unlock();
+    }
+    mtx2.lock();
+    neuron->firing = false;
+    mtx2.unlock();
+
 }
 
 void audiO::alsaSetup(){
@@ -407,7 +421,7 @@ videO::Neuron::Neuron() {
     activation = 0;
     firing = false;
     connections = std::vector<videO::Connection*>();
-    add_to_counter = 0.01;
+    add_to_counter = 0.0001;
 }
 
 videO::Connection::Connection(videO::Neuron* n1, videO::Neuron* n2, double w): neuron_from(n1), neuron_to(n2), weight(w) {
@@ -732,12 +746,6 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 
         this->activation = sigmoid(this->activation);
 
-
-        if (this->activation > globalThreshold) {
-            this->activation = 0;
-            this->firing = true;
-        }
-
         //this->at.push(this->activation);
         //this->at.pop();
 
@@ -745,15 +753,37 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
     
     }
 
+
+void videO::fireThread(videO::Neuron* neuron) {
+    std::mutex fire_mtx;
+    fire_mtx.lock();
+    neuron->firing = true;
+    neuron->activation = 0;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    neuron->firing = false;
+    fire_mtx.unlock();
+}
+
+
+
+std::mutex neuron_mtx;
+void videO::neuronThread() {
+    while (videO::nt_running) {
+        neuron_mtx.lock();
+        videO::globalNetwork->update();  
+        audiO::setOscAmpsWithNeuronActivations();
+        neuron_mtx.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
 //SMFL threaded display
 std::mutex mutex;
 
 void videO::display(sf::RenderWindow* window) {
     while (window->isOpen()) {
         mutex.lock();
-        window->clear();
-        videO::globalNetwork->update();  
-        audiO::setOscAmpsWithNeuronActivations(); 
+        window->clear(); 
         int matrixElements = videO::NUM_LAYERS * videO::NUM_NEURONS;        
         for (int i = 0; i < videO::globalNetwork->layers.size(); i++) {
             for (int j = 0; j < videO::globalNetwork->layers[i]->neurons.size(); j++) {
@@ -763,11 +793,9 @@ void videO::display(sf::RenderWindow* window) {
                 circle.setPosition(matrixElements*i + matrixElements/2 - radius, matrixElements*j + matrixElements/2 - radius);
                 if (videO::globalNetwork->layers[i]->neurons[j]->firing) {
                     circle.setFillColor(sf::Color::Red);
-                    videO::globalNetwork->layers[i]->neurons[j]->firing = false;
                 }
                 else {
                     circle.setFillColor(sf::Color::White);
-                    videO::globalNetwork->layers[i]->neurons[j]->firing = false;
                 }
                 window->draw(circle);
             }
@@ -857,12 +885,12 @@ int main() {
     std::cout << "Arrays created" << std::endl;
     audiO::generateNoteMap(); // a map that will be used to map the note_matrix index to a frequency
     std::cout << "Note map generated" << std::endl;
-    audiO::generateFreqs(); // equal temperament A4 = 440Hz
+    audiO::generateFreqs(); // a vector of frequencies that will be used to generate the sine waves
     std::cout << "Freqs generated" << std::endl;
     audiO::generateSeconds(); // a constant for now, but could be used to change the length of the note
     std::cout << "Seconds generated" << std::endl;
-    audiO::generateNoteMatrix(); // a matrix of booleans that will be used to determine which notes to play.
-    std::cout << "Note matrix generated" << std::endl;
+    //audiO::generateNoteMatrix(); // a matrix of booleans that will be used to determine which notes to play.
+    //std::cout << "Note matrix generated" << std::endl;
     //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
     //If true, the note will be played, if false, it will not.
     //audio_float_buffer is a buffer of shorts that will be used to store the sound data.
@@ -875,9 +903,11 @@ int main() {
     std::cout << "Display thread created" << std::endl;
     audiO::start_audio();
     std::cout << "Audio started" << std::endl;
-
-
+    videO::nt_running = true;
+    std::thread t0(videO::neuronThread);
+    t0.detach();
     display_thread.join();
+    videO::nt_running = false;
     audiO::stop_audio();
     audiO::freeArrays();
     return 0;

@@ -8,8 +8,8 @@
 #include <unordered_map>
 
 namespace videO{
-    const double learning_rate = 0.015;
-    const double globalThreshold = 0.999;
+    const double learning_rate = 0.01;
+    const double globalThreshold = 0.9;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
@@ -21,12 +21,11 @@ namespace videO{
         bool firing;
         std::vector<Connection*> connections;
         double add_to_counter;
-
         Neuron();
 
         void addConnection(Connection* connection);
 
-        double getActivation(Neuron* neuron, double weight);
+        double getActivation(Neuron* neuron, double weight);        
 
         void init_at() {
             for (int i = 0; i < len_at; i++) {
@@ -34,6 +33,8 @@ namespace videO{
             }
         }
     };
+
+    void fireThread(Neuron* neuron);
 
     class Connection {
         public:
@@ -96,6 +97,8 @@ namespace videO{
     };
 
     double sigmoid(double x);
+    void neuronThread();
+    bool nt_running = false;
     void display(sf::RenderWindow* window);
     Network* globalNetwork;
 
@@ -139,6 +142,8 @@ namespace audiO{
     //short* generateSineWaves(bool** note_matrix, short* buffer, int numSines, int* freqs, int* seconds);
 
     std::vector<float> generateSineWaves(); // sound synthesis
+
+    float sigmoidSaturator(float x);
 
     class Oscillator {
         public:
