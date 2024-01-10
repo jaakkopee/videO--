@@ -126,23 +126,12 @@ namespace audiO{
     std::vector<float> audio_float_buffer;
     short* audiobuffer;
     bool running = false;
-    //float*** sinewaves;
     std::vector<float> freqs;
     std::vector<float> seconds;
     std::vector<std::vector<bool>> note_matrix;
     std::unordered_map<int, float> note_map; // maps note_matrix index to frequency
 
     void generateNoteMap();
-
-    std::vector<std::vector<bool>> generateNoteMatrix();
-
-    std::vector<std::vector<bool>> fireToBool();
-
-    void setOscAmpsWithNeuronActivations();
-
-    //short* generateSineWaves(bool** note_matrix, short* buffer, int numSines, int* freqs, int* seconds);
-
-    std::vector<float> generateSineWaves(); // sound synthesis
 
     float sigmoidSaturator(float x);
 

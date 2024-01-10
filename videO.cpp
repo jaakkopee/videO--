@@ -114,16 +114,6 @@ void audiO::generateNoteMap(){
     }
 }
 
-
-std::vector<std::vector<bool>> audiO::generateNoteMatrix(){
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
-            audiO::note_matrix[i][j] = false;
-        }
-    }
-    return audiO::note_matrix;
-}
-
 void audiO::alsaSetup(){
     snd_pcm_hw_params_t *params;
     uint val;
@@ -200,7 +190,6 @@ void audiO::audio_thread(){
 
         float *buffer = new float[audiO::NUM_FRAMES];
         audiO::global_synth->process(buffer, audiO::NUM_FRAMES);
-        std::cout << "buffer[20]: " << buffer[20] << std::endl;
         for (int i = 0; i < audiO::NUM_FRAMES; i++){
             audiO::audiobuffer[i] = (short)(buffer[i] * audiO::SAMPLE_MAX);
         }
@@ -234,8 +223,6 @@ void audiO::stop_audio(){
 void audiO::setupArrays() {
     audiO::freqs = std::vector<float>(audiO::MATRIX_ELEMENTS);
     audiO::seconds = std::vector<float>(audiO::MATRIX_ELEMENTS);
-    audiO::note_matrix = std::vector<std::vector<bool>>(audiO::MATRIX_X_SIZE, std::vector<bool>(audiO::MATRIX_Y_SIZE));
-    audiO::audio_float_buffer = std::vector<float>(audiO::NUM_FRAMES);
     audiO::audiobuffer = (short*)malloc(audiO::NUM_FRAMES * sizeof(short));
 }
 
