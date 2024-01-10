@@ -10,11 +10,11 @@
 
 namespace videO{
     const double learning_rate = 0.0005;
-    const double globalThreshold = 0.999999999999;
+    const double globalThreshold = 0.9999;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
-    const int MAX_FIRING_NEURONS = 3;
+    const int MAX_FIRING_NEURONS = 1;
     class Connection;
     class Neuron {
         public:
