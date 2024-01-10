@@ -813,10 +813,13 @@ void videO::display(sf::RenderWindow* window) {
 
                 circle.setPosition(matrixElements*i + matrixElements/2 - radius, matrixElements*j + matrixElements/2 - radius);
                 if (videO::globalNetwork->layers[i]->neurons[j]->firing) {
-                    circle.setFillColor(sf::Color::Red);
+                    sf::Color color(255, 0, 0, 255);
+                    circle.setFillColor(color);
                 }
                 else {
-                    circle.setFillColor(sf::Color::White);
+                    Neuron* neuron = videO::globalNetwork->layers[i]->neurons[j];
+                    sf::Color color(neuron->activation*63, neuron->activation*180+50, -neuron->activation*127+177, 255);
+                    circle.setFillColor(color);
                 }
                 window->draw(circle);
             }
