@@ -77,8 +77,12 @@ void audiO::Synth::process(float* output, int numFrames){
     for (int i = 0; i < numFrames; i++){
         float sample = 0;
         for (int j = 0; j < audiO::MATRIX_ELEMENTS; j++){
+            Oscillator* osc = this->oscillator_bank->oscillators[j];
+            osc->amp = 1;
+            float osc_sample = osc->getSample();
+            osc->amp = 0.0;
             if (this->notes_playing[j]){
-                sample += this->oscillator_bank->getSample();
+                sample += osc_sample;
             }
         }
         output[i] = sample;
