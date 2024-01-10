@@ -381,6 +381,48 @@ double target7[10][10] = {
     {0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5}
 };
 
+//simple bassline
+double target8[10][10] = {
+    {1,0,0,0,0,0,0,0,0,0},
+    {1,1.5,0,0,0,0,0,0,0,0},
+    {1,0,1.5,0,0,0,0,0,0,0},
+    {1,0,0,1.5,0,0,0,0,0,0},
+    {1,0,0,0,1.5,0,0,0,0,0},
+    {1,0,0,0,0,1.5,0,0,0,0},
+    {1,0,0,0,0,0,1.5,0,0,0},
+    {1,0,0,0,0,0,0,1.5,0,0},
+    {1,0,0,0,0,0,0,0,1.5,0},
+    {1,0,0,0,0,0,0,0,0,1.5}
+};
+
+//another simple bassline
+double target9[10][10] = {
+    {1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5},
+    {1,1.5,0,0,0,0,0,0,0,0},
+    {1,0,1.5,0,0,0,0,0,0,0},
+    {1,0,0,1.5,0,0,0,0,0,0},
+    {1,0,0,0,1.5,0,0,0,0,0},
+    {1,0,0,0,0,1.5,0,0,0,0},
+    {1,0,0,0,0,0,1.5,0,0,0},
+    {1,0,0,0,0,0,0,1.5,0,0},
+    {1,0,0,0,0,0,0,0,1.5,0},
+    {1,0,0,0,0,0,0,0,0,1.5}
+};
+
+//better bassline
+double target0[10][10] = {
+    {1.5,1.3,1.1,0.9,0.7,0.5,0.3,0.1,0.1,0.1},
+    {1.4,1.2,1.0,0.8,0.6,0.4,0.2,0.0,0.0,0.0},
+    {1.3,1.1,0.9,0.7,0.5,0.3,0.1,0.1,0.1,0.1},
+    {1.2,1.0,0.8,0.6,0.4,0.2,0.0,0.0,0.0,0.0},
+    {1.1,0.9,0.7,0.5,0.3,0.1,0.1,0.1,0.1,0.1},
+    {1.0,0.8,0.6,0.4,0.2,0.0,0.0,0.0,0.0,0.0},
+    {0.9,0.7,0.5,0.3,0.1,0.1,0.1,0.1,0.1,0.1},
+    {0.8,0.6,0.4,0.2,0.0,0.0,0.0,0.0,0.0,0.0},
+    {0.7,0.5,0.3,0.1,0.1,0.1,0.1,0.1,0.1,0.1},
+    {0.6,0.4,0.2,0.0,0.0,0.0,0.0,0.0,0.0,0.0}
+};
+
 videO::Network::Network(int n_layers, int n_neurons) {
     for (int i = 0; i < n_layers; i++) {
         videO::Layer* layer = new videO::Layer(this);
@@ -467,6 +509,30 @@ void videO::Network::backpropWithTarget() {
         for (int i = 0; i < layers.size(); i++) {
             for (int j = 0; j < layers[i]->neurons.size(); j++) {
                 targets[i][j] = target7[i][j];
+            }
+        }
+    }
+
+    else if (target == 8) {
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                targets[i][j] = target8[i][j];
+            }
+        }
+    }
+
+    else if (target == 9) {
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                targets[i][j] = target9[i][j];
+            }
+        }
+    }
+
+    else if (target == 0) {
+        for (int i = 0; i < layers.size(); i++) {
+            for (int j = 0; j < layers[i]->neurons.size(); j++) {
+                targets[i][j] = target0[i][j];
             }
         }
     }
@@ -617,7 +683,6 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 std::mutex fire_mtx;
 void videO::fireThread(videO::Neuron* neuron) {
     fire_mtx.lock();
-    neuron->firing = true;
     //find out neurons index in the network
     int layerIndex = 0;
     int neuronIndex = 0;
@@ -631,11 +696,11 @@ void videO::fireThread(videO::Neuron* neuron) {
         layerIndex++;
     }
     found:
-
+    neuron->firing = true;
+    neuron->activation = 0;
     int note_index = neuronIndex;
     audiO::global_synth->playNote(note_index);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    neuron->activation = 0;
+    std::this_thread::sleep_for(std::chrono::milliseconds(40));
     neuron->firing = false;
     audiO::global_synth->stopNote(note_index);
     videO::firingNeurons.erase(std::remove(videO::firingNeurons.begin(), videO::firingNeurons.end(), neuron), videO::firingNeurons.end());
@@ -679,7 +744,7 @@ void videO::neuronThread() {
         neuron_mtx.lock();
         videO::globalNetwork->update();  
         neuron_mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -782,6 +847,15 @@ void videO::display(sf::RenderWindow* window) {
                 }
                 if (event.key.code == sf::Keyboard::Num7) {
                     videO::globalNetwork->setTarget(7);
+                }
+                if (event.key.code == sf::Keyboard::Num8) {
+                    videO::globalNetwork->setTarget(8);
+                }
+                if (event.key.code == sf::Keyboard::Num9) {
+                    videO::globalNetwork->setTarget(9);
+                }
+                if (event.key.code == sf::Keyboard::Num0) {
+                    videO::globalNetwork->setTarget(0);
                 }
             }
         }
