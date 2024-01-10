@@ -84,14 +84,16 @@ audiO::OscillatorBank::~OscillatorBank(){
 float audiO::OscillatorBank::getSample(){
     float sample = 0;
     for (int i = 0; i < this->num_oscillators; i++){
-        sample += this->oscillators[i]->getSample();
+        sample += sigmoidSaturator(global_oscillator_bank->oscillators[i]->getSample());
     }
     return sample;
 }
 
 
 float audiO::sigmoidSaturator(float x){
-    return (1 / (1 + exp(-x)))*2-1; //sigmoid function, returns a value between -1 and 1
+    //sigmoid function, value in in range -1 to 1, value out is in range -1 to 1
+    float xout = (1 / (1 + exp(-x))-0.5)*2;
+    return xout;
 }
 
 std::vector<float> audiO::generateSineWaves(){
@@ -111,7 +113,6 @@ std::vector<float> audiO::generateSineWaves(){
     */
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
         audiO::audio_float_buffer[i] = audiO::global_oscillator_bank->getSample();
-        audiO::audio_float_buffer[i] = sigmoidSaturator(audiO::audio_float_buffer[i]);
         if (audiO::audio_float_buffer[i] > 1){
             audiO::audio_float_buffer[i] = 1;
         }
@@ -247,9 +248,8 @@ void audiO::setOscAmpsWithNeuronActivations(){
         for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
             audiO::Oscillator *osc = audiO::global_oscillator_bank->oscillators[note_index];
-            if (neuron->firing == true && videO::firingNeurons.size() < 10){
-                std::thread t0(audiO::rampAmplitudeThread, osc, neuron);
-                t0.detach();
+            if (neuron->firing == true){
+                osc->amp = neuron->activation + 0.1;
             }
             else{
                 osc->amp = 0;
@@ -263,22 +263,12 @@ void audiO::setOscAmpsWithNeuronActivations(){
 std::mutex mtx2;
 void audiO::rampAmplitudeThread(Oscillator* osc, videO::Neuron* neuron){
     mtx2.lock();
+    while (neuron->firing == true){
+        osc->amp += 0.01;
+    }
     osc->amp = 0;
     mtx2.unlock();
 
-    for (int i = 0; i < 100; i++){
-        mtx2.lock();
-        osc->amp += 0.01;
-        mtx2.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    for (int i = 0; i < 100; i++){
-        mtx2.lock();
-        osc->amp -= 0.01;
-        mtx2.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
 }
 
 void audiO::alsaSetup(){
@@ -354,6 +344,7 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
+        audiO::setOscAmpsWithNeuronActivations();
         audiO::generateSineWaves();
         audiO::audiobuffer = (short*)audiO::audio_float_buffer.data();
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
@@ -417,7 +408,7 @@ videO::Neuron::Neuron() {
     activation = 0;
     firing = false;
     connections = std::vector<videO::Connection*>();
-    add_to_counter = 0.000001;
+    add_to_counter = 0.001;
 }
 
 videO::Connection::Connection(videO::Neuron* n1, videO::Neuron* n2, double w): neuron_from(n1), neuron_to(n2), weight(w) {
@@ -762,7 +753,8 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 
         this->activation = sigmoid(this->activation);
 
-        if (this->activation > videO::globalThreshold && !this->firing) {
+        if (this->activation > videO::globalThreshold && !this->firing && videO::firingNeurons.size() < videO::MAX_FIRING_NEURONS) {
+            videO::firingNeurons.push_back(this);
             this->firing = true;
             this->activation = 0;
             std::thread t0(videO::fireThread, this);
@@ -779,10 +771,9 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 std::mutex fire_mtx;
 void videO::fireThread(videO::Neuron* neuron) {
     fire_mtx.lock();
-    videO::firingNeurons.push_back(neuron);
     neuron->firing = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     neuron->activation = 0;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     neuron->firing = false;
     videO::firingNeurons.erase(std::remove(videO::firingNeurons.begin(), videO::firingNeurons.end(), neuron), videO::firingNeurons.end());
     fire_mtx.unlock();
@@ -795,9 +786,8 @@ void videO::neuronThread() {
     while (videO::nt_running) {
         neuron_mtx.lock();
         videO::globalNetwork->update();  
-        audiO::setOscAmpsWithNeuronActivations();
         neuron_mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -862,14 +852,14 @@ void videO::display(sf::RenderWindow* window) {
             }
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Space) {
-                    videO::globalNetwork->setWeights(0.6);
+                    videO::globalNetwork->setWeights(0.1);
                 }
                 if (event.key.code == sf::Keyboard::Enter) {
-                    videO::globalNetwork->setWeights(-0.01);
+                    videO::globalNetwork->setWeights(0.01);
                 }
                 //keypad A
                 if (event.key.code == sf::Keyboard::A) {
-                    videO::globalNetwork->setWeights(0.1);
+                    videO::globalNetwork->setWeights(0.001);
                 }
                 if (event.key.code == sf::Keyboard::Num1) {
                     videO::globalNetwork->setTarget(1);
