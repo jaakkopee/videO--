@@ -6,10 +6,11 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <unordered_map>
+#include <queue>
 
 namespace videO{
     const double learning_rate = 0.0005;
-    const double globalThreshold = 0.99999999;
+    const double globalThreshold = 0.999999999999;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
@@ -109,7 +110,7 @@ namespace audiO{
     const int MATRIX_Y_SIZE = 10;
     const int MATRIX_ELEMENTS = MATRIX_X_SIZE * MATRIX_Y_SIZE;
     const int NUM_SINES = 10;
-    const float NUM_SECONDS = 0.6;
+    const float NUM_SECONDS = 0.5;
     const float SAMPLE_RATE = 44100;
     const int NUM_CHANNELS = 1;
     const int NUM_FRAMES = (int)(((float)(SAMPLE_RATE) * NUM_SECONDS));
@@ -249,6 +250,21 @@ namespace audiO{
 
             void generatePulseWave();
 
+    };
+
+    class DelayLine {
+        public:
+            std::queue<float> buffer;
+            int buffer_size;
+            float feedback;
+            float wet;
+            float dry;
+
+            DelayLine(int buffer_size, float feedback, float wet, float dry);
+
+            ~DelayLine();
+
+            void process(float* input, float* output, int numFrames);
     };
 
     OscillatorBank* global_oscillator_bank;

@@ -12,12 +12,10 @@
 
 audiO::Oscillator::Oscillator(float freq, float amp, float phase){
     this->freq = freq;
-    std::cout << "freq: " << this->freq << std::endl;
     this->amp = amp;
     this->phase = phase;
     this->phase_increment = this->freq / audiO::SAMPLE_RATE;
-    this->buffer_size = audiO::SAMPLE_RATE / this->freq;
-    std::cout << "buffer size: " << this->buffer_size << std::endl;
+    this->buffer_size = (int)(audiO::SAMPLE_RATE / this->freq);
     this->buffer = new float[this->buffer_size];
     this->buffer_index = 0;
 
@@ -84,7 +82,7 @@ audiO::OscillatorBank::~OscillatorBank(){
 float audiO::OscillatorBank::getSample(){
     float sample = 0;
     for (int i = 0; i < this->num_oscillators; i++){
-        sample += sigmoidSaturator(global_oscillator_bank->oscillators[i]->getSample());
+        sample += sigmoidSaturator(global_oscillator_bank->oscillators[i]->getSample()*0.000001);
     }
     return sample;
 }
@@ -96,6 +94,7 @@ float audiO::sigmoidSaturator(float x){
     return xout;
 }
 
+audiO::DelayLine globalDelayLine(4000, 0.08, 0.2, 0.1);
 std::vector<float> audiO::generateSineWaves(){
     /*
     int note_index = 0;
@@ -119,8 +118,18 @@ std::vector<float> audiO::generateSineWaves(){
         else if (audiO::audio_float_buffer[i] < -1){
             audiO::audio_float_buffer[i] = -1;
         }
+
         audiO::audio_float_buffer[i] *= audiO::SAMPLE_MAX;
     }
+
+    //add delay
+    float* output = new float[audiO::NUM_FRAMES];
+    globalDelayLine.process(audiO::audio_float_buffer.data(), output, audiO::NUM_FRAMES);
+
+    for (int i = 0; i < audiO::NUM_FRAMES; i++){
+        audiO::audio_float_buffer[i] = output[i];
+    }
+    delete[] output;
     /*
     //normalize signal
     //1. find max
@@ -778,6 +787,35 @@ void videO::fireThread(videO::Neuron* neuron) {
     videO::firingNeurons.erase(std::remove(videO::firingNeurons.begin(), videO::firingNeurons.end(), neuron), videO::firingNeurons.end());
     fire_mtx.unlock();
 }
+
+audiO::DelayLine::DelayLine(int buffer_size, float feedback, float wet, float dry){
+    this->buffer_size = buffer_size;
+    this->feedback = feedback;
+    this->wet = wet;
+    this->dry = dry;
+    this->buffer = std::queue<float>();
+    for (int i = 0; i < buffer_size; i++){
+        this->buffer.push(0);
+    }
+}
+
+audiO::DelayLine::~DelayLine(){
+    while (!buffer.empty()){
+        buffer.pop();
+    }
+}
+
+void audiO::DelayLine::process(float* input, float* output, int numFrames){
+    for (int i = 0; i < numFrames; i++){
+        float in = input[i];
+        float out = buffer.front();
+        buffer.pop();
+        buffer.push(in + out * feedback);
+        output[i] = in * dry + out * wet;
+    }
+}
+
+
 
 
 
