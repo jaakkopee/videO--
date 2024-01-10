@@ -46,7 +46,7 @@ audiO::OscillatorBank::~OscillatorBank(){
 float audiO::OscillatorBank::getSample(){
     float sample = 0;
     for (int i = 0; i < this->num_oscillators; i++){
-        sample += global_oscillator_bank->oscillators[i]->getSample()*0.000000001;
+        sample += this->oscillators[i]->getSample();
     }
     return sample;
 }
@@ -60,103 +60,11 @@ float audiO::sigmoidSaturator(float x){
 
 audiO::DelayLine globalDelayLine(4000, 0.08, 0.2, 0.1);
 std::vector<float> audiO::generateSineWaves(){
-    /*
-    int note_index = 0;
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
-            if (audiO::note_matrix[i][j] == true){
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(videO::globalNetwork->layers[i]->neurons[j]->activation+0.1);
-            }
-            else{
-                audiO::global_oscillator_bank->oscillators[note_index]->setAmplitude(0);
-            }
-            note_index++;
-        }
-    }
-    */
     for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::audio_float_buffer[i] = audiO::global_oscillator_bank->getSample()*0.00000001;
+        audiO::audio_float_buffer[i] = audiO::global_oscillator_bank->getSample()/1000000;
     }
-    /*
-    //add delay
-    float* output = new float[audiO::NUM_FRAMES];
-    globalDelayLine.process(audiO::audio_float_buffer.data(), output, audiO::NUM_FRAMES);
-
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::audio_float_buffer[i] = output[i];
-    }
-    delete[] output;
-    */
-    /*
-    //normalize signal
-    //1. find max
-    float max = 0;
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        if (audiO::audio_float_buffer[i] > max){
-            max = audiO::audio_float_buffer[i];
-        }
-    }
-    //2. divide all by max
-    if (max > 0){
-        for (int i = 0; i < audiO::NUM_FRAMES; i++){
-            audiO::audio_float_buffer[i] = (audiO::audio_float_buffer[i] / max) * audiO::SAMPLE_MAX;
-        }
-    }
-    else{
-        for (int i = 0; i < audiO::NUM_FRAMES; i++){
-            audiO::audio_float_buffer[i] = 0;
-        }
-    }
-    */
     return audiO::audio_float_buffer;
 }
-/*
-float* audiO::generateSineWaves(){ 
-    int note_index = 0;
-    for (int i = 0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j = 0; j < audiO::MATRIX_Y_SIZE; j++){
-            note_index++;
-            if (audiO::note_matrix[i][j] == true){
-                for (int k = 0; k < audiO::NUM_FRAMES; k++){
-                    audiO::sinewaves[i][j][k] = (float)(sin(2 * M_PI * audiO::freqs[note_index] / audiO::SAMPLE_RATE) * (audiO::AMPLITUDE_NEURON * videO::globalNetwork->layers[i]->neurons[j]->activation));
-                }
-            }
-            else{
-                for (int k = 0; k < audiO::NUM_FRAMES; k++){
-                    audiO::sinewaves[i][j][k] = 0;
-                }
-            }
-        }
-    }
-
-    for (int i=0; i < audiO::MATRIX_X_SIZE; i++){
-        for (int j=0; j < audiO::MATRIX_Y_SIZE; j++){
-            for (int k=0; k < audiO::NUM_FRAMES; k++){
-                if (i == 0 && j == 0){
-                    audiO::audio_float_buffer[k] = audiO::sinewaves[i][j][k];
-                }
-                else{
-                    audiO::audio_float_buffer[k] += audiO::sinewaves[i][j][k];
-                }
-            }
-        }
-    }
-    //normalize signal
-    //1. find max
-    float max = 0;
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        if (audiO::audio_float_buffer[i] > max){
-            max = audiO::audio_float_buffer[i];
-        }
-    }
-    //2. divide all by max
-    for (int i = 0; i < audiO::NUM_FRAMES; i++){
-        audiO::audio_float_buffer[i] = (audiO::audio_float_buffer[i] / max) * audiO::SAMPLE_MAX;
-    }
-
-    return audiO::audio_float_buffer;
-}
-*/
 
 std::vector<float> audiO::generateFreqs(){
     for (int i = 0; i < audiO::MATRIX_ELEMENTS; i++){
@@ -215,7 +123,7 @@ void audiO::setOscAmpsWithNeuronActivations(){
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
             audiO::Oscillator *osc = audiO::global_oscillator_bank->oscillators[note_index];
             if (neuron->firing == true){
-                osc->amp = neuron->activation * 0.00000000001;
+                osc->amp = 0.00001;
             }
             else{
                 osc->amp = 0;
@@ -896,6 +804,7 @@ void videO::display(sf::RenderWindow* window) {
 }
 
 int main() {
+
     std::cout << "Init:\n" << std::endl;
     videO::globalNetwork = new videO::Network(videO::NUM_LAYERS, videO::NUM_NEURONS);
     std::cout << "Network created" << std::endl;
