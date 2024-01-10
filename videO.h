@@ -14,7 +14,7 @@ namespace videO{
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
-    const int MAX_FIRING_NEURONS = 1;
+    const int MAX_FIRING_NEURONS = 3;
     class Connection;
     class Neuron {
         public:
@@ -201,10 +201,6 @@ namespace audiO{
         public:
             int num_oscillators;
             Oscillator** oscillators;
-            float* buffer;
-            int buffer_size;
-            int buffer_index;
-            bool running;
 
             OscillatorBank();
 
@@ -252,6 +248,27 @@ namespace audiO{
 
     };
 
+    class Synth {
+        public:
+            OscillatorBank* oscillator_bank;
+            int voices;
+            bool running;
+            bool* notes_playing;
+
+            Synth();
+
+            ~Synth();
+
+            void playNote(int note);
+
+            void stopNote(int note);
+
+            void process(float* output, int numFrames);
+
+    };
+
+    Synth* global_synth;
+
     class DelayLine {
         public:
             std::queue<float> buffer;
@@ -267,7 +284,7 @@ namespace audiO{
             void process(float* input, float* output, int numFrames);
     };
 
-    OscillatorBank* global_oscillator_bank;
+    //OscillatorBank* global_oscillator_bank;
 
     void play_alsa();
 
