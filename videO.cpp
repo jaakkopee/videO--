@@ -14,54 +14,18 @@ audiO::Oscillator::Oscillator(float freq, float amp, float phase){
     this->freq = freq;
     this->amp = amp;
     this->phase = phase;
-    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
-    this->buffer_size = (int)(audiO::SAMPLE_RATE / this->freq);
-    this->buffer = new float[this->buffer_size];
-    this->buffer_index = 0;
-
-    //calculate the buffer
-    for (int i = 0; i < this->buffer_size; i++){
-        this->buffer[i] = sin(2 * M_PI * this->phase);
-        this->phase += this->phase_increment;
-        if (this->phase > 1){
-            this->phase -= 1;
-        }
-    }
+    this->phase_increment = (this->freq / audiO::SAMPLE_RATE) * 2 * M_PI;
 }
+
+audiO::Oscillator::~Oscillator(){}
 
 float audiO::Oscillator::getSample(){
-    float sample = this->buffer[this->buffer_index] * this->amp;
-    this->buffer_index++;
-    if (this->buffer_index >= this->buffer_size){
-        this->buffer_index = 0;
+    float sample = sin(this->phase) * this->amp;
+    this->phase += this->phase_increment;
+    if (this->phase > 2 * M_PI){
+        this->phase -= 2 * M_PI;
     }
     return sample;
-}
-
-void audiO::Oscillator::setFrequency(float frequency){
-    this->freq = frequency;
-    this->phase_increment = this->freq / audiO::SAMPLE_RATE;
-    this->buffer_size = (int)(audiO::SAMPLE_RATE / this->freq);
-    delete[] this->buffer;
-    this->buffer = new float[this->buffer_size];
-    this->buffer_index = 0;
-
-    //calculate the buffer
-    for (int i = 0; i < this->buffer_size; i++){
-        this->buffer[i] = sin(2 * M_PI * this->phase);
-        this->phase += this->phase_increment;
-        if (this->phase > 1){
-            this->phase -= 1;
-        }
-    }
-}
-
-void audiO::Oscillator::setAmplitude(float amplitude){
-    this->amp = amplitude;
-}
-
-audiO::Oscillator::~Oscillator(){
-    delete[] this->buffer;
 }
 
 audiO::OscillatorBank::OscillatorBank(){
