@@ -8,8 +8,8 @@
 #include <unordered_map>
 
 namespace videO{
-    const double learning_rate = 0.01;
-    const double globalThreshold = 0.99999;
+    const double learning_rate = 0.0001;
+    const double globalThreshold = 0.9999999;
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
@@ -101,6 +101,7 @@ namespace videO{
     bool nt_running = false;
     void display(sf::RenderWindow* window);
     Network* globalNetwork;
+    std::vector<Neuron*> firingNeurons;
 
 
 }
