@@ -191,7 +191,7 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
-
+        //videO::globalNetwork->update();
         float *buffer = new float[audiO::NUM_FRAMES];
         audiO::global_synth->process(buffer, audiO::NUM_FRAMES);
         for (int i = 0; i < audiO::NUM_FRAMES; i++){
@@ -882,11 +882,6 @@ int main() {
     std::cout << "Freqs generated" << std::endl;
     audiO::generateSeconds(); // a constant for now, but could be used to change the length of the note
     std::cout << "Seconds generated" << std::endl;
-    //audiO::generateNoteMatrix(); // a matrix of booleans that will be used to determine which notes to play.
-    //std::cout << "Note matrix generated" << std::endl;
-    //the matrix is 10x10 buffer length, so there are 100 notes for a 100 neurons.
-    //If true, the note will be played, if false, it will not.
-    //audio_float_buffer is a buffer of shorts that will be used to store the sound data.
     videO::firingNeurons = std::vector<videO::Neuron*>();
     audiO::alsaSetup();
     std::cout << "Alsa setup" << std::endl;
@@ -899,6 +894,7 @@ int main() {
     videO::nt_running = true;
     std::thread t0(videO::neuronThread);
     t0.detach();
+    std::cout << "Neuron thread created" << std::endl;
     display_thread.join();
     videO::nt_running = false;
     audiO::stop_audio();
