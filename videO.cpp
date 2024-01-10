@@ -249,7 +249,7 @@ void audiO::setOscAmpsWithNeuronActivations(){
             videO::Neuron *neuron = videO::globalNetwork->layers[i]->neurons[j];
             audiO::Oscillator *osc = audiO::global_oscillator_bank->oscillators[note_index];
             if (neuron->firing == true){
-                osc->amp = neuron->activation + 0.1;
+                osc->amp = sigmoidSaturator(neuron->activation) * 0.01;
             }
             else{
                 osc->amp = 0;
@@ -344,7 +344,7 @@ std::mutex mtx;
 void audiO::audio_thread(){
     while (audiO::running){
         mtx.lock();
-        audiO::setOscAmpsWithNeuronActivations();
+        //audiO::setOscAmpsWithNeuronActivations();
         audiO::generateSineWaves();
         audiO::audiobuffer = (short*)audiO::audio_float_buffer.data();
         audiO::rc_alsa = snd_pcm_writei(audiO::handle_alsa, audiO::audiobuffer, audiO::frames);
@@ -772,7 +772,7 @@ std::mutex fire_mtx;
 void videO::fireThread(videO::Neuron* neuron) {
     fire_mtx.lock();
     neuron->firing = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(3));
     neuron->activation = 0;
     neuron->firing = false;
     videO::firingNeurons.erase(std::remove(videO::firingNeurons.begin(), videO::firingNeurons.end(), neuron), videO::firingNeurons.end());
@@ -785,9 +785,10 @@ std::mutex neuron_mtx;
 void videO::neuronThread() {
     while (videO::nt_running) {
         neuron_mtx.lock();
-        videO::globalNetwork->update();  
+        videO::globalNetwork->update();
+        audiO::setOscAmpsWithNeuronActivations();  
         neuron_mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 
@@ -802,6 +803,12 @@ void videO::display(sf::RenderWindow* window) {
         for (int i = 0; i < videO::globalNetwork->layers.size(); i++) {
             for (int j = 0; j < videO::globalNetwork->layers[i]->neurons.size(); j++) {
                 double radius = videO::globalNetwork->layers[i]->neurons[j]->activation * matrixElements/3;
+                if (radius > 100) {
+                    radius = 100;
+                }
+                if (radius < 0) {
+                    radius = 0;
+                }
                 sf::CircleShape circle(radius);
 
                 circle.setPosition(matrixElements*i + matrixElements/2 - radius, matrixElements*j + matrixElements/2 - radius);
