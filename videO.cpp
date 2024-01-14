@@ -458,7 +458,6 @@ void videO::Network::backpropWithTarget() {
         targets[i] = new double[layers[i]->neurons.size()];
     }
 
-    // copy target to targets
     if (target == 1) {
         for (int i = 0; i < layers.size(); i++) {
             for (int j = 0; j < layers[i]->neurons.size(); j++) {
@@ -700,7 +699,7 @@ void videO::fireThread(videO::Neuron* neuron) {
     neuron->activation = 0;
     int note_index = neuronIndex;
     audiO::global_synth->playNote(note_index);
-    std::this_thread::sleep_for(std::chrono::milliseconds(40));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     neuron->firing = false;
     audiO::global_synth->stopNote(note_index);
     videO::firingNeurons.erase(std::remove(videO::firingNeurons.begin(), videO::firingNeurons.end(), neuron), videO::firingNeurons.end());
