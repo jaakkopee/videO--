@@ -667,7 +667,7 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 
         this->activation = sigmoid(this->activation);
 
-        if (this->activation > videO::globalThreshold && !this->firing && videO::firingNeurons.size() < videO::MAX_FIRING_NEURONS) {
+        if (this->activation > videO::globalThreshold && videO::firingNeurons.size() < videO::MAX_FIRING_NEURONS) {
             videO::firingNeurons.push_back(this);
             std::thread t0(videO::fireThread, this);
             t0.detach();
@@ -683,6 +683,7 @@ double videO::Neuron::getActivation(Neuron* neuron, double weight) {
 std::mutex fire_mtx;
 void videO::fireThread(videO::Neuron* neuron) {
     fire_mtx.lock();
+    neuron->firing = true;
     //find out neurons index in the network
     int layerIndex = 0;
     int neuronIndex = 0;
@@ -696,7 +697,6 @@ void videO::fireThread(videO::Neuron* neuron) {
         layerIndex++;
     }
     found:
-    neuron->firing = true;
     neuron->activation = 0;
     int note_index = neuronIndex;
     audiO::global_synth->playNote(note_index);

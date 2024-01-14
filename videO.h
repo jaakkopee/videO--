@@ -14,7 +14,7 @@ namespace videO{
     const int len_at = 2^10;
     const int NUM_NEURONS = 10;
     const int NUM_LAYERS = 10;
-    const int MAX_FIRING_NEURONS = 6;
+    const int MAX_FIRING_NEURONS = 24;
     class Connection;
     class Neuron {
         public:
